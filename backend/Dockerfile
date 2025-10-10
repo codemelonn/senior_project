@@ -11,4 +11,4 @@ COPY . .
 
 EXPOSE 5000
 
-CMD ["python", "./NLP_tests/bert_tests.py"]
+CMD ["python", "./NLP_tests/bert_tests.py", "./NLP_tests/bert_base_uncase_testing"]
