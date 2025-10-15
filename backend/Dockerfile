@@ -10,6 +10,6 @@ RUN pip install --no-cache-dir --upgrade pip && pip install --no-cache-dir -r re
 # Copy the rest of your code
 COPY . .
 
-EXPOSE 5000
+EXPOSE 8000
 
-CMD ["python", "./NLP_tests/bert_tests.py", "./NLP_tests/bert_base_uncase_testing"]
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -3,8 +3,10 @@
 #       pip install transformers matplotlib wordcloud
 
 """
-Note: I found that bert-base-uncased-emotion works better than some of the other models I tried. The problem is that it is not as fast as distilbert-based models, but it is more accurate.
-Not sure if there is a distilbert-based model that does emotion classification in a similar way, but this will do for now.
+Note: I found that bert-base-uncased-emotion works better than some of the other models I tried. 
+The problem is that it is not as fast as distilbert-based models, but it is more accurate.
+Not sure if there is a distilbert-based model that does emotion classification in a similar way, 
+but this will do for now.
      -Dominik 
 """
 
