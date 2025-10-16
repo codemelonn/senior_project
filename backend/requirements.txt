@@ -1,6 +1,6 @@
-torch 
+torch
 transformers
-fastapi 
+fastapi
 uvicorn
 pydantic
-
+python-multipart

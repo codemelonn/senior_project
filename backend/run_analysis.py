@@ -1,16 +1,26 @@
 """
 run_analysis.py
 ---------------
-Standalone version of the Bias Checker NLP pipeline.
-Performs emotion classification, secondary workshop model classification,
-and summarization — either from text input or a file.
+Standalone version of the Bias Checker NLP pipeline models. 
+
+This script performs three major analyses on user-provided text input:
+    1. Emotion classification using BERT-based emotion detection.
+    2. Secondary emotion classification using a workshop model.
+    3. Text summarization using a pretrained BART summarizer.
+
+It supports both manual text input and file-based input from the command line.
 
 Usage:
-    python run_analysis.py                ← prompts for manual text input
-    python run_analysis.py myfile.txt     ← reads text from a file
+    $ python run_analysis.py                # prompts user for text input
+    $ python run_analysis.py myfile.txt     # analyzes text from a file
+
+Author:
+    Dominik T. — NLP logic implementation
+    Amara B.   — CLI interface and execution flow
 """
 
 from transformers import pipeline 
+import json
 import sys
 import os 
 
@@ -19,34 +29,86 @@ import os
 # ==========================
 
 # debugging stmt
-print(" ==== Loading models (this may take a moment)...")
+print(" ==== Loading models (this may take a moment)... ==== \n")
 
 
 # ======================================
 # Emotion classification (primary model)
 # ======================================
+"""
+BERT model fine-tuned to classify short text into discrete emotions (e.g., joy, 
+fear, anger, sadness, etc.). You get the top predicted label and its confidence score
+"""
 emotion_model_name = "bhadresh-savani/bert-base-uncased-emotion"
-emotion_classifier = pipeline("text-classification", model=emotion_model_name, tokenizer=emotion_model_name)
+emotion_classifier = pipeline(
+    "text-classification", 
+    model = emotion_model_name,
+    tokenizer = emotion_model_name
+)
 
 # =========================
 # Secondary workshop model
 # =========================
+"""
+Emotion classifier trained in a HF workshop context; returning scores for every label
+(since we set top_k=None), useful to see distribution of emotions rather than a winner
+"""
 workshop_model_name = "rrpetroff/huggingface-workshop-emotions-bert"
-workshop_classifier = pipeline("text-classification", model=workshop_model_name, tokenizer=workshop_model_name, return_all_scores=True)
+workshop_classifier = pipeline(
+    "text-classification", 
+    model = workshop_model_name, 
+    tokenizer = workshop_model_name,
+    top_k = None
+)
 
 # =====================
 # Summarization model
 # =====================
+"""
+Large summarizer model (BART) trained on news; it compresses input text into a coherent
+summary. You can tweak max_length/min_length to control summary size. 
+"""
 summarizer_name = "facebook/bart-large-cnn"
-summarizer = pipeline("summarization", model=summarizer_name, tokenizer=summarizer_name)
+summarizer = pipeline(
+    "summarization", 
+    model = summarizer_name, 
+    tokenizer = summarizer_name
+)
+
+print(" ==== Models loaded successfully! ==== \n")
 
 # =============================================
-#   ANALYSIS FUNCTION   |    Author: Dominik T. 
+#   ANALYSIS FUNCTION   |    Authors: Dominik T. 
 # =============================================
 def analyze_text(text: str): 
 
-    """Runs emotion, workshop, and summarization analysis on input text."""
-    
+    """
+    Run full NLP analysis (emotion, workshop classification, and summarization).
+
+    This function applies multiple transformer pipelines to analyze the
+    emotional content and generate a short summary of the input text.
+
+    Args:
+        text (str): The input text to analyze.
+
+    Returns:
+        dict: A dictionary containing:
+            - best_emotion (dict): Highest-scoring emotion from the primary model.
+            - best_workshop (dict): Highest-scoring emotion from the secondary model.
+            - all_emotion_scores (list[dict]): Full list of scores from primary model.
+            - all_workshop_scores (list[dict]): Full list of scores from secondary model.
+            - summary (str): Concise summary of the input text.
+            - reason (str): Simple reasoning or detected emotional keywords.
+
+    Example:
+        >>> analyze_text("I love my job, but it's stressful at times.")
+        {
+            'best_emotion': {'label': 'joy', 'score': 0.89},
+            'summary': 'The person enjoys their job but finds it stressful.',
+            ...
+        }
+    """
+
     # Emotion model results
     emotion_results = emotion_classifier(text, return_all_scores=True)[0]
     best_emotion = max(emotion_results, key=lambda x: x["score"])
@@ -85,6 +147,22 @@ def analyze_text(text: str):
 #  MAIN EXECUTION LOGIC    |   Author: Amara B
 # ==============================================
 def main():
+    """
+    Command-line interface for running the Bias Checker pipeline.
+
+    This function handles:
+        • Reading text either from a specified file or direct user input.
+        • Executing the analysis pipeline via `analyze_text()`.
+        • Printing formatted results to the terminal.
+
+    Usage:
+        $ python run_analysis.py mytext.txt
+        $ python run_analysis.py
+
+    Exits:
+        SystemExit: If the provided file path is invalid.
+    """
+
     # Handle CLI input (file or manual)
     if len(sys.argv) > 1:
         file_path = sys.argv[1]
