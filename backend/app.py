@@ -2,11 +2,7 @@
 Author:         Amara B
 Purpose:        Turn existing NLP tests into fast API compatible code
 
-
-
 """
-
-
 
 from fastapi import FastAPI
 from pydantic import BaseModel
