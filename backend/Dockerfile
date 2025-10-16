@@ -12,7 +12,7 @@ COPY requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir --no-deps --no-build-isolation --no-input --no-warn-script-location --trusted-host pypi.org -r requirements.txt --no-require-hashes
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the backend files (including NLP_tests, main.py, etc.)
 COPY . .
