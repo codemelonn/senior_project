@@ -29,7 +29,7 @@ import os
 # ==========================
 
 # debugging stmt
-print(" ==== Loading models (this may take a moment)... ==== \n")
+print("\n ==== Loading models (this may take a moment)... ==== \n")
 
 
 # ======================================
