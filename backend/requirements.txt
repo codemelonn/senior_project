@@ -1,15 +1,8 @@
-<<<<<<< HEAD
 fastapi
 uvicorn
 pydantic
 transformers
 detoxify
 numpy
-=======
 torch
-transformers
-fastapi
-uvicorn
-pydantic
 python-multipart
->>>>>>> br_api_tests

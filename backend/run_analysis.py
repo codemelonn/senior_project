@@ -19,8 +19,14 @@ Author:
     Amara B.   — CLI interface and execution flow
 """
 
-from transformers import pipeline 
-import json
+from transformers import (
+    pipeline, 
+    AutoTokenizer, 
+    DistilBertForSequenceClassification, 
+)  
+from detoxify import Detoxify
+import torch
+import numpy as np 
 import sys
 import os 
 
@@ -30,7 +36,6 @@ import os
 
 # debugging stmt
 print("\n ==== Loading models (this may take a moment)... ==== \n")
-
 
 # ======================================
 # Emotion classification (primary model)
@@ -47,23 +52,18 @@ emotion_classifier = pipeline(
 )
 
 # =========================
-# Secondary workshop model
+#   Political bias model
 # =========================
 """
-Emotion classifier trained in a HF workshop context; returning scores for every label
-(since we set top_k=None), useful to see distribution of emotions rather than a winner
+Info can be found here: https://huggingface.co/cajcodes/DistilBERT-PoliticalBias
 """
-workshop_model_name = "rrpetroff/huggingface-workshop-emotions-bert"
-workshop_classifier = pipeline(
-    "text-classification", 
-    model = workshop_model_name, 
-    tokenizer = workshop_model_name,
-    top_k = None
-)
+bias_model_name = "cajcodes/DistilBERT-PoliticalBias"
+bias_model = DistilBertForSequenceClassification.from_pretrained(bias_model_name)
+bias_tokenizer = AutoTokenizer.from_pretrained(bias_model_name)
 
-# =====================
-# Summarization model
-# =====================
+# ========================
+#   Summarization model
+# ========================
 """
 Large summarizer model (BART) trained on news; it compresses input text into a coherent
 summary. You can tweak max_length/min_length to control summary size. 
@@ -75,11 +75,20 @@ summarizer = pipeline(
     tokenizer = summarizer_name
 )
 
+# ===================
+#   Toxicity model
+# ===================
+"""
+Info can be found here: https://github.com/unitaryai/detoxify
+"""
+toxicity_model = Detoxify('unbiased')
+
+
 print(" ==== Models loaded successfully! ==== \n")
 
-# =============================================
-#   ANALYSIS FUNCTION   |    Authors: Dominik T. 
-# =============================================
+# ===============================================
+#   ANALYSIS FUNCTION   |    Authors: Dominik T.
+# ===============================================
 def analyze_text(text: str): 
 
     """
@@ -109,38 +118,51 @@ def analyze_text(text: str):
         }
     """
 
-    # Emotion model results
-    emotion_results = emotion_classifier(text, return_all_scores=True)[0]
-    best_emotion = max(emotion_results, key=lambda x: x["score"])
+    """Runs all models on the given text."""
 
-    # Workshop model results
-    workshop_results = workshop_classifier(text, return_all_scores=True)[0]
-    best_workshop = max(workshop_results, key=lambda x: x["score"])
-
-    # Summarization
-    summary = summarizer(text, max_length=60, min_length=5, do_sample=False)[0]["summary_text"]
-
-    # Simple reasoning keyword detection
-    keywords = {
-        "joy": ["happy","love","great","excited","wonderful","joy","pleased"],
-        "sadness": ["sad","unhappy","sorrow","grief","cry","pain"],
-        "anger": ["angry","furious","mad","hate","resent"],
-        "fear": ["fear","afraid","scared","nervous","worried"],
-        "surprise": ["surprised","shock","unexpected","wow"],
-        "love": ["love","affection","cherish","fond"]
+    # ---- Emotion ----
+    emotion_output = emotion_classifier(text)[0]
+    emotion_results = {
+        "label": emotion_output["label"],
+        "score": float(emotion_output["score"])
     }
-    reason_words = [w for w in keywords.get(best_emotion["label"].lower(), []) if w in text.lower()]
-    reason_str = ", ".join(reason_words) if reason_words else "No obvious keywords found."
 
-    # Return structured result
+    # ---- Summary ----
+    summary_results = summarizer(
+        text, max_length=50, min_length=5, do_sample=False
+    )[0]["summary_text"]
+
+
+    # ---- Political Bias ----
+    political_bias_results = None
+    try: 
+        inputs = bias_tokenizer(text, return_tensors="pt", truncation=True, padding=True)
+        with torch.no_grad():
+            outputs = bias_model(**inputs)
+        probs = outputs.logits.softmax(dim=1).tolist()[0]
+        labels = ["left", "center", "right"]
+        political_bias_results = dict(zip(labels, [float(p) for p in probs]))
+    except Exception as e: 
+        print(f"Political bias model error: {e}")
+      
+
+    # ---- Toxicity ----
+    try:
+        toxicity_raw = toxicity_model.predict(text)
+        toxicity_score = toxicity_raw['toxicity']
+    except Exception as e:
+        print("Toxicity model error:", e)
+        toxicity_score = None
+
+
     return {
-        "best_emotion": best_emotion,
-        "best_workshop": best_workshop,
-        "all_emotion_scores": emotion_results,
-        "all_workshop_scores": workshop_results,
-        "summary": summary,
-        "reason": reason_str
+        "best_emotion": emotion_results["label"],
+        "emotion": emotion_results,
+        "summary": summary_results,
+        "political_bias": political_bias_results,
+        "toxicity": toxicity_score
     }
+
 
 
 # ==============================================
@@ -179,19 +201,24 @@ def main():
     print("\n🔍 Running analysis...\n")
     result = analyze_text(text)
 
-    # Display results
-    print("🧠 Primary Emotion:", result["best_emotion"])
-    print("🎭 Workshop Emotion:", result["best_workshop"])
-    print("📝 Summary:", result["summary"])
-    print("💡 Reason:", result["reason"])
+    # ======================
+    #  Display Results
+    # ======================
+    print("🧠 Primary Emotion:", result["emotion"]["label"])
+    print(f"   Confidence: {result['emotion']['score']:.3f}")
 
-    print("\nAll Emotion Scores:")
-    for r in result["all_emotion_scores"]:
-        print(f"  - {r['label']}: {r['score']:.3f}")
+    print("\n📰 Summary:")
+    print(result["summary"])
 
-    print("\nAll Workshop Scores:")
-    for r in result["all_workshop_scores"]:
-        print(f"  - {r['label']}: {r['score']:.3f}")
+    print("\n🏛️ Political Bias Scores:")
+    if result["political_bias"]:
+        for k, v in result["political_bias"].items():
+            print(f"  - {k}: {v:.3f}")
+    else:
+        print("  (No bias detected or model error.)")
+
+    print("\n☣️ Toxicity Score:")
+    print(result["toxicity"])
 
 if __name__ == "__main__":
     main()
