@@ -41,14 +41,14 @@ const AppLayout = ({
           <div className="container flex flex-wrap items-center justify-between gap-6">
             <Link to="/" className="flex items-center gap-3 text-foreground">
               <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent text-lg font-semibold text-primary-foreground shadow-lg shadow-primary/25">
-                IA
+                TCB
               </span>
               <div className="flex flex-col">
                 <span className="text-lg font-semibold tracking-tight">
-                  Input Aurora
+                  TryCatch(Bias)
                 </span>
                 <span className="text-sm text-foreground/60">
-                  Transform ideas instantly
+                  Find and Fix Bias in Text
                 </span>
               </div>
             </Link>

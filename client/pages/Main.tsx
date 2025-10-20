@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
+import { Pie, PieChart, BarChart, Cell, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 const formatCharacterCount = (value: string) =>
   new Intl.NumberFormat().format(value.length);
+
+const COLORS = ["#8884d8", "#82ca9d", "#ffc658", "#ff7f50", "#a4de6c", "#d0ed57"];
 
 const samplePrompts = [
   "Capture your headline introduction",
@@ -41,7 +44,7 @@ const Main = () => {
       setError(null);
 
       try {
-        const response = await fetch("http://localhost:5000/api/analyze", {
+        const response = await fetch("http://localhost:8000/api/analyze", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -118,12 +121,111 @@ const Main = () => {
             {analysis && (
               <div className="space-y-4">
                 <h3 className="text-xl font-semibold">Analysis Results</h3>
-                <p><strong>Emotion:</strong> {analysis.emotion?.label} ({analysis.emotion?.score?.toFixed(3)})</p>
-                <p><strong>Summary:</strong> {analysis.summary}</p>
-                <p><strong>Political Bias:</strong> {JSON.stringify(analysis.political_bias)}</p>
-                <p><strong>Toxicity:</strong> {JSON.stringify(analysis.toxicity)}</p>
+
+                {/* Summary */}
+                <div><strong>Summary:</strong> {analysis.summary}</div>
+
+                {/* Emotions: So this is a test for the chart itself. In the next sprints I think we want to move to a dashboard
+                that displays all the information so it's not so cluttered; but for now, I think this is a decent demo for now.*/}
+                <div>
+                  <strong>Emotions:</strong>
+                  <ul className="mt-2 space-y-1">
+                    {analysis.emotion?.map((e: any, idx: number) => (
+                      <li key={idx}>
+                        {e.label}: {e.score.toFixed(3)}
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* Chart */}
+                  <div className="mt-6">
+                    <h4 className="text-lg font-semibold mb-2">Emotion Scores</h4>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <PieChart>
+                        <Tooltip />
+                        <Pie
+                          data={analysis.emotion}
+                          dataKey="score"
+                          nameKey="label"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={100}
+                          label={({ name, percent }) =>
+                            `${name} ${(percent * 100).toFixed(1)}%`
+                          }
+                        >
+                          {analysis.emotion.map((entry: any, index: number) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={COLORS[index % COLORS.length]} // cycles through the color list
+                            />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Political Bias */}
+                {/* <p><strong>Political Bias:</strong> {JSON.stringify(analysis.political_bias)}</p> */}
+                <div>
+                  <strong>Political Bias:</strong>
+                  <ul className="mt-2 space-y-1">
+                    {Object.entries(analysis.political_bias || {}).map(([label, value], idx) => (
+                      <li key={idx}>
+                        {label}: {value.toFixed(3)}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-6">
+                    <h4 className="text-lg font-semibold mb-2">Political Bias Scores</h4>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart
+                        data={Object.entries(analysis.political_bias || {}).map(([label, value]) => ({
+                          label,
+                          score: value,
+                        }))}
+                      >
+                        <XAxis dataKey="label" />
+                        <YAxis domain={[0, 1]} />
+                        <Tooltip />
+                        <Bar dataKey="score" fill="#82ca9d" radius={[8, 8, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+
+                {/* Toxicity */}
+                {/* <p><strong>Toxicity:</strong> {JSON.stringify(analysis.toxicity)}</p> */}
+                <div>
+                  <strong>Toxicity:</strong>
+                  <ul className="mt-2 space-y-1">
+                    {Object.entries(analysis.toxicity || {}).map(([label, value], idx) => (
+                      <li key={idx}>
+                        {label}: {value.toFixed(3)}
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-6">
+                    <h4 className="text-lg font-semibold mb-2">Toxicity Scores</h4>
+                    <ResponsiveContainer width="100%" height={300}>
+                      <BarChart
+                        data={Object.entries(analysis.toxicity || {}).map(([label, value]) => ({
+                          label,
+                          score: value,
+                        }))}
+                      >
+                        <XAxis dataKey="label" />
+                        <YAxis domain={[0, 1]} />
+                        <Tooltip />
+                        <Bar dataKey="score" fill="#ff6b6b" radius={[8, 8, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
               </div>
             )}
+
           </div>
 
           <div className="mt-8 flex flex-wrap items-center justify-between gap-4">

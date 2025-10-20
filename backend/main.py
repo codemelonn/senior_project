@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from pydantic import BaseModel
 from fastapi.middleware.cors import CORSMiddleware
-from transformers import AutoModelForSequenceClassification, pipeline, AutoTokenizer, DistilBertForSequenceClassification
+from transformers import AutoModelForSequenceClassification, pipeline, AutoTokenizer, DistilBertForSequenceClassification, DistilBertTokenizer
 from detoxify import Detoxify
 import numpy as np
 
@@ -27,6 +27,8 @@ summarizer = pipeline("summarization", model=summarizer_name, tokenizer=summariz
 
 # Political bias model
 # info can be found here: https://huggingface.co/cajcodes/DistilBERT-PoliticalBias
+# model = DistilBertForSequenceClassification.from_pretrained('cajcodes/DistilBERT-PoliticalBias')
+# tokenizer = AutoTokenizer.from_pretrained('cajcodes/DistilBERT-PoliticalBias')
 model = DistilBertForSequenceClassification.from_pretrained('cajcodes/DistilBERT-PoliticalBias')
 tokenizer = AutoTokenizer.from_pretrained('cajcodes/DistilBERT-PoliticalBias')
 
@@ -42,21 +44,26 @@ def analyze_text(input: TextInput):
     text = input.text
 
     # Emotion
-    emotion_results = emotion_classifier(text)[0]
-    emotion_results = {
-        "label": emotion_results["label"],
-        "score": float(emotion_results["score"])
-    }
-
+    emotion_results = emotion_classifier(text, return_all_scores=True)[0]
+    
     # Summary
     summary_results = summarizer(text, max_length=50, min_length=5, do_sample=False)[0]['summary_text']
 
     # Political bias
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, padding=True)
+    inputs = tokenizer(text, return_tensors="pt")
+    
+    # Handle out-of-vocabulary tokens by replacing them with the unk token id
+    # This may be a problem and we might have to use another model since doing this can interfere with results
+    unk_token_id = tokenizer.convert_tokens_to_ids(tokenizer.unk_token)
+    inputs["input_ids"][inputs["input_ids"] >= model.config.vocab_size] = unk_token_id
+    
+    # Print number of tokens to terminal
+    num_tokens = inputs["input_ids"].shape[1]
+    # print(f"[Political Bias Model] Token count: {num_tokens}")
     outputs = model(**inputs)
     probs = outputs.logits.softmax(dim=1).tolist()[0]
     # Labels can be changed here.
-    labels = ['left', 'center', 'right']
+    labels = ["Extreme Left", "Left", "Center", "Right", "Extreme Right"]
     political_bias_results = dict(zip(labels, [float(p) for p in probs]))
 
     # Toxicity
