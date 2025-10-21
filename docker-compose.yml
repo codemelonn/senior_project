@@ -2,17 +2,15 @@
 
 services:
   backend:
-    build: ./backend
-    container_name: codemelon/senior_project:backend-v2
+    image: codemelon/senior_project:backend-v2
+    container_name: backend
     ports:
       - "8000:8000"
-    volumes:
-      - ./backend:/app
     restart: always
 
   frontend:
-    build: ./frontend
-    container_name: codemelon/senior_project:frontend-v2
+    image: codemelon/senior_project:frontend-v2
+    container_name: frontend
     ports:
       - "8080:8080"
     volumes:

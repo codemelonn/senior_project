@@ -36,11 +36,11 @@ This setup lets you run both backend and frontend without installing Python or N
    When ready, you’ll see lines like:
    ```
    backend  | Uvicorn running on http://0.0.0.0:8000
-   frontend | VITE v5.0  ready at http://localhost:5173
+   frontend | VITE v5.0  ready at http://localhost:8080
    ```
 
 4. **Open the app:**
-   - Frontend → http://localhost:5173  
+   - Frontend → http://localhost:8080  
    - Backend (API Docs) → http://localhost:8000/docs  
 
 5. **Stop the containers:**
@@ -55,7 +55,7 @@ This setup lets you run both backend and frontend without installing Python or N
 | Service | Framework | Port | Description |
 |----------|------------|------|-------------|
 | `backend` | FastAPI (Uvicorn) | 8000 | NLP API for emotion, bias, and toxicity analysis |
-| `frontend` | React + Vite | 5173 | User interface calling backend via REST API |
+| `frontend` | React + Vite | 8080 | User interface calling backend via REST API |
 
 ---
 
@@ -79,7 +79,7 @@ senior_project/
 ---
 
 ## 🧩 Notes for Reviewers
-- The first build may take **a few minutes** (downloads large Hugging Face models).
+- The first build may take **up to 15 minutes** (downloads large Hugging Face models and creates environment to run **without** a server).
 - If you see  
   `env file ./backend/.env not found` — that’s fine; it’s optional and not required.
 - Do **not** commit `__pycache__`, `node_modules`, or `.env` files.
