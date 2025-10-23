@@ -1,35 +1,31 @@
-# ============================
-#   FRONTEND BUILD STAGE
-# ============================
+# Stage 1: Build
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files and install dependencies
+# Copy dependencies and install
 COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+RUN npm install -g pnpm && pnpm install
 
-# Copy source code
+# Copy the rest of the source code
 COPY . .
 
-# ✅ Build ONLY the client side (skip the nonexistent server build)
-RUN pnpm run build:client
+# Build the production site
+ENV NODE_ENV=production
+RUN pnpm build
 
-# ============================
-#   PRODUCTION SERVER STAGE
-# ============================
-FROM node:20-alpine AS runner
-
+# Stage 2: Serve built files
+FROM node:20-alpine
 WORKDIR /app
-
-# Copy the built assets from the builder stage
-COPY --from=builder /app/dist ./dist
 
 # Install a lightweight static file server
 RUN npm install -g serve
 
-# Expose port 8080
+# Copy the build output from the builder stage
+COPY --from=builder /app/dist /app/dist
+
+# Expose the frontend port
 EXPOSE 8080
 
-# Serve the built frontend
-CMD ["serve", "-s", "dist/spa", "-l", "8080"]
+# Serve the built files
+CMD ["serve", "-s", "dist", "-l", "8080"]
