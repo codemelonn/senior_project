@@ -1,18 +1,28 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from run_analysis import analyze_text
+from run_analysis import analyze_text, load_models, emotion_classifier
 import uvicorn 
 
 # ---------------
 #   App Config
 # ---------------
 
+
 app = FastAPI(
     title = "Bias Checker NLP API",
     description="Analyze text for emotion, summarization, political bias, and toxicity.",
     version = "2.0.0",
 )
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Load NLP models once when the server starts."""
+    import asyncio
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, load_models)
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,10 +38,11 @@ app.add_middleware(
 class TextInput(BaseModel):
     text: str
 
-
 # ------------
 #   Routes
 # ------------
+
+
 @app.get("/")
 def home():
     return {"message": "Bias Checker API running. Use POST /api/analyze or /api/analyze-file."}

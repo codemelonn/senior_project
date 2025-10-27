@@ -30,59 +30,49 @@ import numpy as np
 import sys
 import os 
 
-# ==========================
-#   MODEL INITIALIZATION
-# ==========================
+# ===============================
+#   GLOBAL MODEL INITIALIZATION
+# ===============================
+emotion_classifier = None
+summarizer = None 
+bias_model = None 
+bias_tokenizer = None 
+toxicity_model = None 
 
-# debugging stmt
-print("\n ==== Loading models (this may take a moment)... ==== \n")
 
-# ======================================
-# Emotion classification (primary model)
-# ======================================
-"""
-BERT model fine-tuned to classify short text into discrete emotions (e.g., joy, 
-fear, anger, sadness, etc.). You get the top predicted label and its confidence score
-"""
-emotion_model_name = "bhadresh-savani/bert-base-uncased-emotion"
-emotion_classifier = pipeline(
-    "text-classification", 
-    model = emotion_model_name,
-    tokenizer = emotion_model_name
-)
+def load_models():
+    """
+    Initialize all NLP models once (called during startup).
+    """
+    
+    global emotion_classifier, summarizer, bias_model, bias_tokenizer, toxicity_model
 
-# =========================
-#   Political bias model
-# =========================
-"""
-Info can be found here: https://huggingface.co/cajcodes/DistilBERT-PoliticalBias
-"""
-bias_model_name = "cajcodes/DistilBERT-PoliticalBias"
-bias_model = DistilBertForSequenceClassification.from_pretrained(bias_model_name)
-bias_tokenizer = AutoTokenizer.from_pretrained(bias_model_name)
+    # debugging stmt
+    print("\n ==== Loading models (this may take a moment)... ==== \n")
 
-# ========================
-#   Summarization model
-# ========================
-"""
-Large summarizer model (BART) trained on news; it compresses input text into a coherent
-summary. You can tweak max_length/min_length to control summary size. 
-"""
-summarizer_name = "facebook/bart-large-cnn"
-summarizer = pipeline(
-    "summarization", 
-    model = summarizer_name, 
-    tokenizer = summarizer_name
-)
+    # Emotion classifier
+    emotion_model_name = "bhadresh-savani/bert-base-uncased-emotion"
+    emotion_classifier = pipeline(
+        "text-classification",
+        model=emotion_model_name,
+        tokenizer=emotion_model_name
+    )
 
-# ===================
-#   Toxicity model
-# ===================
-"""
-Info can be found here: https://github.com/unitaryai/detoxify
-"""
-toxicity_model = Detoxify('unbiased')
+    # Summarizer
+    summarizer_name = "facebook/bart-large-cnn"
+    summarizer = pipeline(
+        "summarization",
+        model=summarizer_name,
+        tokenizer=summarizer_name
+    )
 
+    # Political bias model
+    bias_model_name = "cajcodes/DistilBERT-PoliticalBias"
+    bias_model = DistilBertForSequenceClassification.from_pretrained(bias_model_name)
+    bias_tokenizer = AutoTokenizer.from_pretrained(bias_model_name)
+
+    # Toxicity model
+    toxicity_model = Detoxify('unbiased')
 
 print(" ==== Models loaded successfully! ==== \n")
 

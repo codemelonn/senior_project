@@ -11,6 +11,8 @@ const samplePrompts = [
   "Share a personal welcome message",
 ];
 
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000";
+
 const Main = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -41,7 +43,7 @@ const Main = () => {
       setError(null);
 
       try {
-        const response = await fetch("http://localhost:5000/api/analyze", {
+        const response = await fetch(`${API_BASE}/api/analyze`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
