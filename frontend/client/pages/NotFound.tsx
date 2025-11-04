@@ -1,3 +1,12 @@
+/*
+
+NotFound ("*") — 404 Fallback
+
+This page catches invalid URLs and guides users back to the landing page.
+
+*/
+
+
 import { useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
