@@ -1,28 +1,37 @@
-# Use a lightweight Python image
+# 1) Base
 FROM python:3.11-slim
 
-# Prevents Python from buffering stdout/stderr (useful for logs)
-ENV PYTHONUNBUFFERED=1
+# 2) System basics (optional but helpful)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git curl && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
+# 3) Workdir
 WORKDIR /app
 
-# Copy dependency file first (to use Docker cache)
+# 4) Install deps first so they cache
 COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Python dependencies
-RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+# 5) Pre-download ALL models into the image layer
+#    (same models your code loads in load_models())
+RUN python - <<'PY'
+from transformers import pipeline, AutoTokenizer, DistilBertForSequenceClassification
+from detoxify import Detoxify
+# Emotion
+pipeline("text-classification", model="bhadresh-savani/bert-base-uncased-emotion")
+# Summarizer
+pipeline("summarization", model="facebook/bart-large-cnn")
+# Political bias
+DistilBertForSequenceClassification.from_pretrained("cajcodes/DistilBERT-PoliticalBias")
+AutoTokenizer.from_pretrained("cajcodes/DistilBERT-PoliticalBias")
+# Toxicity
+Detoxify('unbiased')
+print("✅ Pre-download complete")
+PY
 
-# Copy the rest of the backend files (including NLP_tests, main.py, etc.)
+# 6) Copy the app
 COPY . .
 
-# Expose port for FastAPI
-EXPOSE 8000
-
-# healthcheck (with a long start period for model loading)
-HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=5 \
-    CMD curl --fail http://localhost:8000/ || exit 1
-
-# Command to start FastAPI (change to your entry file name if needed)
+# 7) Run API (FastAPI + uvicorn)
+# main.py exposes app=FastAPI() and uvicorn is what your README suggests
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

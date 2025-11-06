@@ -1,6 +1,5 @@
 # Stage 1: Build
 FROM node:20-alpine AS builder
-
 WORKDIR /app
 
 # Copy dependencies and install
@@ -11,7 +10,6 @@ RUN npm install -g pnpm && pnpm install
 COPY . .
 
 # Build the production site
-ENV NODE_ENV=production
 RUN pnpm build
 
 # Stage 2: Serve built files
@@ -22,7 +20,7 @@ WORKDIR /app
 RUN npm install -g serve
 
 # Copy the build output from the builder stage
-COPY --from=builder /app/dist /app/dist
+COPY --from=builder /app/dist/spa ./dist
 
 # Expose the frontend port
 EXPOSE 8080

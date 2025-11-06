@@ -146,12 +146,19 @@ def analyze_text(text: str):
 
 
     return {
-        "best_emotion": emotion_results["label"],
-        "emotion": emotion_results,
-        "summary": summary_results,
-        "political_bias": political_bias_results,
-        "toxicity": toxicity_score
+    "best_emotion": str(emotion_results["label"]),
+    "emotion": {
+        "label": emotion_results["label"],
+        "score": float(emotion_results["score"])
+    },
+    "summary": str(summary_results),
+    "political_bias": (
+        {k: float(v) for k, v in political_bias_results.items()}
+        if political_bias_results else None
+    ),
+    "toxicity": float(toxicity_score) if toxicity_score is not None else None
     }
+
 
 
 
