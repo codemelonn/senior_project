@@ -1,24 +1,29 @@
 services:
-  backend:
-    image: codemelon/senior_project:backend-v1       # ✅ pulled from Docker Hub
-    container_name: bias-backend
-    working_dir: /app/NLP_tests
-    command: python bert_tests.py
-    volumes:
-      - ./backend:/app                             # optional: lets you live-edit code
-    networks:
-      - biasnet
+    backend:
+        image: codemelon/senior_project:backend-v3
+        container_name: backend
+        ports:
+            - "8000:8000"
+        environment:
+            - PYTHONBUFFERED=1
+        command: uvicorn main:app --host 0.0.0.0 --port 8000
+        volumes:
+            - ./backend:/app
+        healthcheck:
+            test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000')"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 15s
 
-  frontend:
-    image: codemelon/senior_project:frontend-v1   # ✅ pulled from Docker Hub
-    container_name: bias-frontend
-    ports:
-      - "5173:5173"
-    depends_on:
-      - backend
-    networks:
-      - biasnet
-
-networks:
-  biasnet:
-    driver: bridge
+    frontend:
+        image: codemelon/senior_project:frontend-v3
+        container_name: frontend
+        ports:
+            - "8080:8080"
+        volumes:
+            - ./frontend:/app
+        #    depends_on:
+        #      backend:
+        #        condition: service_healthy
+        restart: always

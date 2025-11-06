@@ -1,0 +1,126 @@
+/** @import must precede all other statements */
+@import url("https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 223 46% 96%;
+    --foreground: 230 43% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 230 43% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 230 43% 12%;
+
+    --primary: 259 78% 64%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 215 60% 92%;
+    --secondary-foreground: 230 43% 12%;
+
+    --muted: 223 48% 94%;
+    --muted-foreground: 226 16% 45%;
+
+    --accent: 190 92% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 350 84% 58%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 32% 88%;
+    --input: 220 28% 86%;
+    --ring: 259 78% 64%;
+
+    --radius: 1rem;
+
+    --sidebar-background: 223 46% 96%;
+    --sidebar-foreground: 230 43% 12%;
+    --sidebar-primary: 259 78% 64%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 60% 92%;
+    --sidebar-accent-foreground: 230 43% 12%;
+    --sidebar-border: 220 32% 88%;
+    --sidebar-ring: 259 78% 64%;
+  }
+
+  .dark {
+    --background: 232 45% 8%;
+    --foreground: 220 40% 96%;
+
+    --card: 236 45% 12%;
+    --card-foreground: 220 40% 96%;
+
+    --popover: 236 45% 12%;
+    --popover-foreground: 220 40% 96%;
+
+    --primary: 263 100% 74%;
+    --primary-foreground: 232 45% 12%;
+
+    --secondary: 233 39% 18%;
+    --secondary-foreground: 220 40% 96%;
+
+    --muted: 230 30% 22%;
+    --muted-foreground: 220 18% 68%;
+
+    --accent: 192 93% 49%;
+    --accent-foreground: 220 40% 6%;
+
+    --destructive: 355 74% 63%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 232 34% 20%;
+    --input: 232 32% 22%;
+    --ring: 263 100% 74%;
+
+    --sidebar-background: 232 40% 12%;
+    --sidebar-foreground: 220 40% 96%;
+    --sidebar-primary: 263 100% 74%;
+    --sidebar-primary-foreground: 232 45% 12%;
+    --sidebar-accent: 233 39% 18%;
+    --sidebar-accent-foreground: 220 40% 96%;
+    --sidebar-border: 232 34% 20%;
+    --sidebar-ring: 263 100% 74%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    background-image: radial-gradient(circle at 0% 0%, rgba(124, 92, 255, 0.12), transparent 55%),
+      radial-gradient(circle at 100% 0%, rgba(0, 196, 216, 0.16), transparent 55%);
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    color: hsl(var(--primary-foreground));
+    background-color: hsl(var(--primary));
+  }
+
+  :where(p, span, li, h1, h2, h3, h4, h5, h6, a, button, label, td, th) {
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  a {
+    @apply text-primary transition-colors duration-200;
+  }
+
+  a:hover {
+    @apply text-primary/80;
+  }
+
+  pre,
+  code {
+    overflow-x: auto;
+    white-space: pre;
+  }
+}
