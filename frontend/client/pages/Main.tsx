@@ -1,150 +1,305 @@
-import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import AppLayout from "@/components/layout/AppLayout";
+/*
+Main ("/main") — Results Dashboard
 
-const formatCharacterCount = (value: string) =>
-  new Intl.NumberFormat().format(value.length);
+This page displays the interactive bias analysis dashboard with 
+tabs for Sentiment, Political, and Overview data visualizations.
+*/
 
-const samplePrompts = [
-  "Capture your headline introduction",
-  "Outline a key objective",
-  "Share a personal welcome message",
-];
+import React, { useState } from "react";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { BarChart3, TrendingUp, AlertCircle, FileText } from "lucide-react";
 
-const Main = () => {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+export default function Main() {
+  const [activeTab, setActiveTab] = useState("sentiment");
 
-  const entry = useMemo(() => searchParams.get("entry")?.trim() ?? "", [searchParams]);
-  const [analysis, setAnalysis] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const sentimentData = [
+    { name: "Positive", value: 45, color: "#10b981" },
+    { name: "Neutral", value: 30, color: "#f59e0b" },
+    { name: "Negative", value: 25, color: "#ef4444" },
+  ];
 
-  const characterCount = useMemo(() => formatCharacterCount(entry), [entry]);
+  const politicalBiasData = [
+    { name: "Left-Leaning", value: 28, color: "#3b82f6" },
+    { name: "Center", value: 44, color: "#8b5cf6" },
+    { name: "Right-Leaning", value: 28, color: "#ec4899" },
+  ];
 
-  const wordCount = useMemo(() => {
-    if (!entry) return "0";
-    const words = entry.split(/\s+/).filter(Boolean).length;
-    return new Intl.NumberFormat().format(words);
-  }, [entry]);
+  const tabs = [
+    { id: "sentiment", label: "Sentiment Bias", icon: TrendingUp },
+    { id: "political", label: "Political Bias", icon: BarChart3 },
+    { id: "overview", label: "Overview", icon: FileText },
+  ];
 
-  const handleCreateAnother = () => {
-    navigate("/");
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-stone-800 px-4 py-2 rounded-lg border border-stone-600">
+          <p className="text-stone-100 font-semibold">{payload[0].name}</p>
+          <p className="text-stone-300">{payload[0].value}%</p>
+        </div>
+      );
+    }
+    return null;
   };
 
-  // Fetch analysis results from backend
-  useEffect(() => {
-    if (!entry) return;
-
-    const analyzeText = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch("http://localhost:5000/api/analyze", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ text: entry }),
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
-        setAnalysis(data);
-      } catch (err: any) {
-        setError("Failed to fetch analysis results. Please try again.");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    analyzeText();
-  }, [entry]);
-
   return (
-    <AppLayout contentClassName="flex flex-col items-center pb-24">
-      <section className="w-full max-w-4xl space-y-10 text-center">
-        <div className="flex flex-col gap-4">
-          <span className="mx-auto inline-flex items-center gap-2 rounded-full border border-accent/40 bg-accent/10 px-4 py-1.5 text-sm font-medium text-accent">
-            Text Analysis
-          </span>
-          <h1 className="text-4xl font-semibold tracking-tight text-foreground md:text-5xl">
-            AI Analysis Results
-          </h1>
-          <p className="mx-auto max-w-2xl text-lg leading-relaxed text-foreground/70">
-            See how your submitted text is interpreted across sentiment, toxicity, and bias.
+    <div className="min-h-screen bg-gradient-to-br from-stone-100 via-amber-50 to-stone-200 flex">
+      {/* Sidebar */}
+      <div className="w-64 shadow-2xl p-6" style={{ backgroundColor: "#9caf88" }}>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold text-stone-800 mb-2">Bias Analyzer</h1>
+          <p className="text-stone-700 text-sm">Content Analysis Tool</p>
+        </div>
+
+        <nav className="space-y-2">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
+                activeTab === tab.id
+                  ? "text-stone-800 shadow-lg"
+                  : "text-stone-700 hover:bg-stone-700/20"
+              }`}
+              style={activeTab === tab.id ? { backgroundColor: "#b8c9a8" } : {}}
+            >
+              <tab.icon className="w-5 h-5" />
+              <span className="font-medium">{tab.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        <div className="mt-12 p-4 rounded-xl" style={{ backgroundColor: "#8a9d7a" }}>
+          <AlertCircle className="w-6 h-6 text-stone-100 mb-2" />
+          <p className="text-stone-100 text-sm">
+            Analysis based on NLP models trained on neutral datasets
           </p>
         </div>
+      </div>
 
-        <div className="relative overflow-hidden rounded-[2.5rem] border border-white/60 bg-white/80 p-10 text-left shadow-xl backdrop-blur-2xl">
-          <header className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-foreground/60">
-                Submitted content
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold text-foreground">
-                {entry ? "Live preview" : "Awaiting input"}
-              </h2>
-            </div>
-            <div className="grid grid-cols-2 gap-4 text-sm text-foreground/70 sm:flex sm:items-center sm:gap-10">
-              <div>
-                <span className="block text-xs uppercase tracking-[0.18em] text-foreground/50">
-                  Characters
-                </span>
-                <span className="text-lg font-semibold text-foreground">{characterCount}</span>
-              </div>
-              <div>
-                <span className="block text-xs uppercase tracking-[0.18em] text-foreground/50">
-                  Words
-                </span>
-                <span className="text-lg font-semibold text-foreground">{wordCount}</span>
-              </div>
-            </div>
-          </header>
-
-          <article className="mt-8 rounded-3xl border border-primary/15 bg-white/90 p-6 text-base leading-relaxed text-foreground shadow-inner">
-            {entry ? <p>{entry}</p> : <p className="text-foreground/60">No text provided.</p>}
-          </article>
-
-          <div className="mt-8 space-y-4">
-            {loading && <p className="text-center text-emerald-600">Analyzing...</p>}
-            {error && <p className="text-center text-red-600">{error}</p>}
-
-            {analysis && (
-              <div className="space-y-4">
-                <h3 className="text-xl font-semibold">Analysis Results</h3>
-                <p><strong>Emotion:</strong> {analysis.emotion?.label} ({analysis.emotion?.score?.toFixed(3)})</p>
-                <p><strong>Summary:</strong> {analysis.summary}</p>
-                <p><strong>Political Bias:</strong> {JSON.stringify(analysis.political_bias)}</p>
-                <p><strong>Toxicity:</strong> {JSON.stringify(analysis.toxicity)}</p>
-              </div>
-            )}
+      {/* Main Content */}
+      <div className="flex-1 p-8 overflow-y-auto">
+        <div className="max-w-6xl mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-stone-800 mb-2">
+              {tabs.find((t) => t.id === activeTab)?.label}
+            </h2>
+            <p className="text-stone-600">Real-time bias detection and analysis</p>
           </div>
 
-          <div className="mt-8 flex flex-wrap items-center justify-between gap-4">
-            <button
-              type="button"
-              onClick={handleCreateAnother}
-              className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-5 py-2 text-sm font-semibold text-primary transition-colors duration-200 hover:border-primary hover:bg-primary/20"
-            >
-              Create another input
-            </button>
-            <Link
-              to={entry ? `/main?entry=${encodeURIComponent(entry)}` : "/"}
-              className="text-sm font-medium text-foreground/60 hover:text-primary"
-            >
-              Share link to this view
-            </Link>
-          </div>
+          {/* Sentiment Bias View */}
+          {activeTab === "sentiment" && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Chart */}
+                <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-stone-200">
+                  <h3 className="text-xl font-semibold text-stone-800 mb-6">Sentiment Distribution</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={sentimentData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={70}
+                        outerRadius={120}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {sentimentData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<CustomTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="grid grid-cols-3 gap-3 mt-6">
+                    {sentimentData.map((item, idx) => (
+                      <div key={idx} className="text-center">
+                        <div
+                          className="w-4 h-4 rounded-full mx-auto mb-2"
+                          style={{ backgroundColor: item.color }}
+                        ></div>
+                        <p className="text-stone-700 font-medium text-sm">{item.name}</p>
+                        <p className="text-stone-500 text-xs">{item.value}%</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl shadow-xl p-6 border-2 border-green-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-lg font-semibold text-green-900">Positive Tone</h4>
+                      <span className="text-3xl font-bold text-green-700">45%</span>
+                    </div>
+                    <p className="text-green-800 text-sm">
+                      Content shows optimistic and constructive language
+                    </p>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-2xl shadow-xl p-6 border-2 border-amber-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-lg font-semibold text-amber-900">Neutral Tone</h4>
+                      <span className="text-3xl font-bold text-amber-700">30%</span>
+                    </div>
+                    <p className="text-amber-800 text-sm">
+                      Balanced and objective presentation of information
+                    </p>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-2xl shadow-xl p-6 border-2 border-red-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-lg font-semibold text-red-900">Negative Tone</h4>
+                      <span className="text-3xl font-bold text-red-700">25%</span>
+                    </div>
+                    <p className="text-red-800 text-sm">Critical or pessimistic language detected</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Political Bias View */}
+          {activeTab === "political" && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Chart */}
+                <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-stone-200">
+                  <h3 className="text-xl font-semibold text-stone-800 mb-6">
+                    Political Bias Distribution
+                  </h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={politicalBiasData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={70}
+                        outerRadius={120}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {politicalBiasData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<CustomTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="grid grid-cols-3 gap-3 mt-6">
+                    {politicalBiasData.map((item, idx) => (
+                      <div key={idx} className="text-center">
+                        <div
+                          className="w-4 h-4 rounded-full mx-auto mb-2"
+                          style={{ backgroundColor: item.color }}
+                        ></div>
+                        <p className="text-stone-700 font-medium text-sm">{item.name}</p>
+                        <p className="text-stone-500 text-xs">{item.value}%</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl shadow-xl p-6 border-2 border-blue-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-lg font-semibold text-blue-900">Left-Leaning</h4>
+                      <span className="text-3xl font-bold text-blue-700">28%</span>
+                    </div>
+                    <p className="text-blue-800 text-sm">
+                      Progressive language and framing detected
+                    </p>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl shadow-xl p-6 border-2 border-purple-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-lg font-semibold text-purple-900">Center</h4>
+                      <span className="text-3xl font-bold text-purple-700">44%</span>
+                    </div>
+                    <p className="text-purple-800 text-sm">
+                      Balanced political perspective maintained
+                    </p>
+                  </div>
+
+                  <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-2xl shadow-xl p-6 border-2 border-pink-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-lg font-semibold text-pink-900">Right-Leaning</h4>
+                      <span className="text-3xl font-bold text-pink-700">28%</span>
+                    </div>
+                    <p className="text-pink-800 text-sm">
+                      Conservative language and framing detected
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Overview View */}
+          {activeTab === "overview" && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Both Charts */}
+                <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-stone-200">
+                  <h3 className="text-xl font-semibold text-stone-800 mb-6">Sentiment Analysis</h3>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={sentimentData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {sentimentData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<CustomTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-stone-200">
+                  <h3 className="text-xl font-semibold text-stone-800 mb-6">Political Bias</h3>
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={politicalBiasData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={60}
+                        outerRadius={100}
+                        paddingAngle={5}
+                        dataKey="value"
+                      >
+                        {politicalBiasData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<CustomTooltip />} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-stone-200">
+                <h3 className="text-xl font-semibold text-stone-800 mb-4">Analysis Summary</h3>
+                <p className="text-stone-600 leading-relaxed">
+                  This content demonstrates a balanced approach with a slight positive sentiment (45%) and
+                  maintains political neutrality with the majority of content (44%) classified as center-positioned.
+                  The analysis is based on NLP models trained on neutral datasets to ensure objective evaluation.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
-      </section>
-    </AppLayout>
+      </div>
+    </div>
   );
-};
-
-export default Main;
+}

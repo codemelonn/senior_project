@@ -1,3 +1,14 @@
+/*
+
+AppLayout — Shared Layout Shell
+
+This component provides the common page chrome (background, 
+spacing, wrappers) and renders page content via children. Put global elements 
+(e.g., disclaimer bar) here so they appear everywhere.
+
+*/
+
+
 import type { PropsWithChildren } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
