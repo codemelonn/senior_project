@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pydantic
+transformers
+detoxify
+numpy
+torch
+python-multipart
