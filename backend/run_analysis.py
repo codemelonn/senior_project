@@ -74,7 +74,62 @@ def load_models():
     # Toxicity model
     toxicity_model = Detoxify('unbiased')
 
-print(" ==== Models loaded successfully! ==== \n")
+    print(" ==== Models loaded successfully! ==== \n")
+    
+""" 
+# ===============================================
+#   INDIVIDUAL MODEL FUNCTIONS   |   Author: Dominik T.
+
+Here is where we will have each individual model function defined so that when called from the frontend we can have separate outputs.
+
+TODO: Swap out political model for the larger, better one found in larger_nlp_testing.py.
+      Add toxicity model function here as well.
+      
+      Note: For the toxicity model, we may want to split the scores into their own categories to match the frontend display; or we can just return the overall toxicity score.
+# ===============================================
+"""
+
+def run_sentiment_model(text: str, sensitivity: str):
+    """
+    Run sentiment analysis model on the input text.
+
+    Args:
+        text (str): The input text to analyze.
+
+    Returns:
+        dict: A dictionary with sentiment labels and their corresponding scores.
+    """
+    emotion_output = emotion_classifier(text)[0]
+    emotion_results = {
+        "label": emotion_output["label"],
+        "score": float(emotion_output["score"])
+    }
+
+    return emotion_results
+
+def run_political_model(text: str, sensitivity: str):
+    """
+    Run political bias model on the input text.
+
+    Args:
+        text (str): The input text to analyze.
+
+    Returns:
+        dict: A dictionary with political bias labels and their corresponding scores.
+    """
+    political_bias_results = None
+    try: 
+        inputs = bias_tokenizer(text, return_tensors="pt", truncation=True, padding=True)
+        with torch.no_grad():
+            outputs = bias_model(**inputs)
+        probs = outputs.logits.softmax(dim=1).tolist()[0]
+        labels = ["left", "center", "right"]
+        political_bias_results = dict(zip(labels, [float(p) for p in probs]))
+    except Exception as e: 
+        print(f"Political bias model error: {e}")
+
+    return political_bias_results
+
 
 # ===============================================
 #   ANALYSIS FUNCTION   |    Authors: Dominik T.

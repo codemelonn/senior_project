@@ -1,4 +1,3 @@
-
 /*
 
 Index ("/") — Landing & Input
@@ -7,6 +6,7 @@ This page lets you paste or type content,
 choose what kinds of bias to check, set sensitivity, and start analysis.
 On submit, it routes to “/main” with your input in the query string.
 
+TODO: Connect the file upload button to backend API for text extraction.
 */
 
 
@@ -14,6 +14,7 @@ import { FormEvent, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
 import { FileText, Upload, AlertCircle, CheckCircle, Settings } from "lucide-react";
+import { en } from "zod/v4/locales";
 
 type BiasKeys = "sentiment" | "political" | "racial" | "gender";
 type Sensitivity = "low" | "medium" | "high";
@@ -39,7 +40,9 @@ export default function Index() {
   const handleBiasToggle = (key: BiasKeys) =>
     setSelectedBiases((prev) => ({ ...prev, [key]: !prev[key] }));
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+
+// Here is where we handle the form submission and connect to the backend API
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmed = entry.trim();
 
@@ -49,12 +52,34 @@ export default function Index() {
     }
 
     setError(null);
-    const params = new URLSearchParams({
+
+
+    // Prepare payload for backend, might not need sensitivity depending.
+    const payload = {
       entry: trimmed,
       sensitivity,
-      selected: JSON.stringify(selectedBiases),
-    });
-    navigate(`/main?${params.toString()}`);
+      selected: selectedBiases,
+    };
+
+    try {
+      // Send POST request to backend API
+      const response = await fetch("http://localhost:8000/api/analyze", {
+        method: 'POST',
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) throw new Error("Server Error");
+
+      const results = await response.json();
+
+      navigate("/main", { state: { results, entry: trimmed } });
+    } catch (error) {
+      setError("An error occurred while processing your request. Please try again.");
+      console.error("Error during analysis:", error);
+    }
+    // What was before we connected to the backend.
+    // navigate(`/main?${params.toString()}`);
   };
 
   return (
@@ -97,6 +122,8 @@ export default function Index() {
             <p className="text-sm text-stone-500">
               {entry.length} characters • {wordCount} {wordCount === 1 ? "word" : "words"}
             </p>
+
+            {/*-------------- File Upload Button to be connected with the backend --------------*/}
             <button
               type="button"
               className="flex items-center gap-2 rounded-lg px-3 py-2 text-stone-600 hover:bg-stone-100 transition"

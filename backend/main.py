@@ -1,7 +1,8 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from typing import Dict
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from run_analysis import analyze_text, load_models, emotion_classifier
+from run_analysis import analyze_text, load_models, emotion_classifier, run_sentiment_model, run_political_model
 import uvicorn 
 
 # ---------------
@@ -37,6 +38,12 @@ app.add_middleware(
 # ----------------------
 class TextInput(BaseModel):
     text: str
+    
+class AnalysisRequest(BaseModel):
+    entry: str
+    sensitivity: str
+    selectedBiases: Dict[str, bool]
+    
 
 # ------------
 #   Routes
@@ -47,12 +54,52 @@ class TextInput(BaseModel):
 def home():
     return {"message": "Bias Checker API running. Use POST /api/analyze or /api/analyze-file."}
 
-@app.post("/api/analyze")
-def analyze_text_endpoint(input: TextInput):
-    """Receives JSON: {"text": "..."} and returns model results."""
 
+
+
+# @app.post("/api/analyze")
+# def analyze_text_endpoint(input: TextInput):
+#     """Receives JSON: {"text": "..."} and returns model results."""
+
+#     try:
+#         return analyze_text(input.text)
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+# 
+
+""" 
+This function analyzes the input text using multiple NLP models and returns the results.
+
+TODO: Connect this to the frontend so that the output matches what is expected. We already have the connection to the Index page.
+    All that is left is to connect the output of this function to Main.tsx.
+"""
+@app.post("/api/analyze")
+async def analyze_text_endpoint(request: Request):
+    """Receives JSON: {"entry": "...", "sensitivity": "...", "selectedBiases": {...}} and returns model results."""
     try:
-        return analyze_text(input.text)
+        data = await request.json()
+        print("Received data:", data)
+
+        # Get the text and selected biases, sensitivity doesn't really do anything yet
+        text = data.get("entry", "")
+        sensitivity = data.get("sensitivity", "")
+        selected = data.get("selected", {})
+
+        results = {}
+
+        # Run only the selected analyses
+        # TODO: implement other models
+        if selected.get("sentiment"):
+            results["sentiment"] = run_sentiment_model(text, sensitivity)
+        if selected.get("political"):
+            results["political"] = run_political_model(text, sensitivity)
+        # Add others as needed...
+
+        print("Analysis results:", results)
+
+        return {"results": results, "sensitivity": sensitivity}
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
