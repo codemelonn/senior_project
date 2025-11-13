@@ -134,23 +134,26 @@ def run_political_model(text: str, sensitivity: str):
 
 # Toxicity model function here but might split this into different categories for different toxicity types (e.g. toxicity, severe toxicity, identity attack, etc.)
 # For now, we will just return the overall toxicity score.
+# TODO: We need to organize how we are returning all the scores in general because we have a problem if you try running as is.
+#       Note: I changed main.py so that it wouldn't bug out and it just prints for now.
 def run_toxicity_model(text: str, sensitivity: str):
     """
-    Run toxicity model on the input text.
-
-    Args:
-        text (str): The input text to analyze.
-
-    Returns:
-        dict: A dictionary with toxicity labels and their corresponding scores.
+    Run toxicity model on the input text using Detoxify.
+    Converts all numpy.float32 values to native Python floats.
     """
     try:
-        toxicity_raw = toxicity_model.predict(text)
-        toxicity_score = toxicity_raw['toxicity']
-        return toxicity_score
+        if not isinstance(text, str):
+            text = str(text)
+
+        results = toxicity_model.predict(text)
+
+        # Convert numpy.float32 → float
+        clean_results = {k: float(v) for k, v in results.items()}
+
+        return clean_results
     except Exception as e:
         print("Toxicity model error:", e)
-        return None
+        return {"error": str(e)}
     
 def run_summarization_model(text: str, sensitivity: str):
     """

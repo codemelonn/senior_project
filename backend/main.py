@@ -96,9 +96,13 @@ async def analyze_text_endpoint(request: Request):
             results["political"] = run_political_model(text, sensitivity)
 
         # This is for the toxicity model, but this will need to be changed depending on how we want to display the results as
-        # an overall score or a breakdown of the different types of toxicity.    
+        # an overall score or a breakdown of the different types of toxicity.   
+        # TODO: There is a problem with how the results are being returned, so we need to adjust the format in how data is being returned.
+        #       Note this might have fixed it, but we'll need to test it later; but Detoxify returns its scores as NumPy types, so we need to convert them to floats.
+        #       FastAPI doesn't know how to serialize NumPy types, so we need to convert them to floats before returning.
+        #       Note: I changed the code in run_analysis.py to just return the results as
         if selected.get("racial") or selected.get("gender"):
-            results["toxicity"] = run_toxicity_model(text, sensitivity)
+            print("toxicity scores: ", run_toxicity_model(text, sensitivity))
 
         # If we change it for an overall score, the code will look something like this:
         # if selected.get("toxicity"):
