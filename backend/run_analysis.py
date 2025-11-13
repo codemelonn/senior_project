@@ -107,6 +107,8 @@ def run_sentiment_model(text: str, sensitivity: str):
 
     return emotion_results
 
+
+# This model is no good, but we can keep it here for now until we swap it out for the larger one.
 def run_political_model(text: str, sensitivity: str):
     """
     Run political bias model on the input text.
@@ -129,6 +131,42 @@ def run_political_model(text: str, sensitivity: str):
         print(f"Political bias model error: {e}")
 
     return political_bias_results
+
+# Toxicity model function here but might split this into different categories for different toxicity types (e.g. toxicity, severe toxicity, identity attack, etc.)
+# For now, we will just return the overall toxicity score.
+def run_toxicity_model(text: str, sensitivity: str):
+    """
+    Run toxicity model on the input text.
+
+    Args:
+        text (str): The input text to analyze.
+
+    Returns:
+        dict: A dictionary with toxicity labels and their corresponding scores.
+    """
+    try:
+        toxicity_raw = toxicity_model.predict(text)
+        toxicity_score = toxicity_raw['toxicity']
+        return toxicity_score
+    except Exception as e:
+        print("Toxicity model error:", e)
+        return None
+    
+def run_summarization_model(text: str, sensitivity: str):
+    """
+    Run summarization model on the input text.
+
+    Args:
+        text (str): The input text to analyze.
+
+    Returns:
+        str: A concise summary of the input text.
+    """
+    summary_results = summarizer(
+        text, max_length=50, min_length=5, do_sample=False
+    )[0]["summary_text"]
+    
+    return summary_results
 
 
 # ===============================================

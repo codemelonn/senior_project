@@ -2,7 +2,7 @@ from typing import Dict
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from run_analysis import analyze_text, load_models, emotion_classifier, run_sentiment_model, run_political_model
+from run_analysis import analyze_text, load_models, emotion_classifier, run_sentiment_model, run_political_model, run_toxicity_model
 import uvicorn 
 
 # ---------------
@@ -89,12 +89,21 @@ async def analyze_text_endpoint(request: Request):
         results = {}
 
         # Run only the selected analyses
-        # TODO: implement other models
+        # TODO: implement other models; "racial" | "gender"
         if selected.get("sentiment"):
             results["sentiment"] = run_sentiment_model(text, sensitivity)
         if selected.get("political"):
             results["political"] = run_political_model(text, sensitivity)
-        # Add others as needed...
+
+        # This is for the toxicity model, but this will need to be changed depending on how we want to display the results as
+        # an overall score or a breakdown of the different types of toxicity.    
+        if selected.get("racial") or selected.get("gender"):
+            results["toxicity"] = run_toxicity_model(text, sensitivity)
+
+        # If we change it for an overall score, the code will look something like this:
+        # if selected.get("toxicity"):
+        #     results["toxicity"] = run_toxicity_model(text, sensitivity)
+        # and we'll need to change Index.tsx to just show toxicity instead of race or gender.
 
         print("Analysis results:", results)
 
