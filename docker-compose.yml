@@ -20,9 +20,7 @@ services:
         image: codemelon/senior_project:frontend-v3
         container_name: frontend
         ports:
-            - "8080:8080"
-        volumes:
-            - ./frontend:/app
+            - "5174:5174"
         #    depends_on:
         #      backend:
         #        condition: service_healthy
