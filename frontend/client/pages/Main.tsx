@@ -26,29 +26,60 @@ export default function Main() {
     );
   }
 
-  const sentimentData = [
-    // { name: "Positive", value: 45, color: "#10b981" },
-    // { name: "Neutral", value: 30, color: "#f59e0b" },
-    // { name: "Negative", value: 25, color: "#ef4444" },
+  // Define colors for each emotion
+  const emotionColors: Record<string, string> = {
+    sadness: "#3b82f6",
+    joy: "#fbbf24",
+    love: "#ec4899",
+    anger: "#ef4444",
+    fear: "#8b5cf6",
+    surprise: "#14b8a6",
+  };
 
-    // Not the most optimal way to do this but works for now.
-    // One problems is that if some of the values are too small, then the chart won't show them and you're stuck with only one emotion showing.
-    // Good news, it does work dynamically based on the results from the backend.
-    // TODO: Change the chart section so the side results aren't hardcoded but generated based on the results from the backend.
-    { name: "Sadness", value: Number((results.results.sentiment.all_scores[0].score * 100).toFixed(2)), color: "#3b82f6" },
-    { name: "Joy", value: Number((results.results.sentiment.all_scores[1].score * 100).toFixed(2)), color: "#fbbf24" },
-    { name: "Love", value: Number((results.results.sentiment.all_scores[2].score * 100).toFixed(2)), color: "#ec4899" },
-    { name: "Anger", value: Number((results.results.sentiment.all_scores[3].score * 100).toFixed(2)), color: "#ef4444" },
-    { name: "Fear", value: Number((results.results.sentiment.all_scores[4].score * 100).toFixed(2)), color: "#8b5cf6" },
-    { name: "Surprise", value: Number((results.results.sentiment.all_scores[5].score * 100).toFixed(2)), color: "#14b8a6" },
+  // This sames a safe way to access the sentiment scores without worrying about undefined values.
+  const sentimentScores = results?.results?.sentiment?.all_scores || [];
 
-  ];
+  // Commenting this out since it's not optimal and safe, but will keep it for reference.
+  // const sentimentData = [
+  //   // { name: "Positive", value: 45, color: "#10b981" },
+  //   // { name: "Neutral", value: 30, color: "#f59e0b" },
+  //   // { name: "Negative", value: 25, color: "#ef4444" },
 
-  const politicalBiasData = [
-    { name: "Left-Leaning", value: 28, color: "#3b82f6" },
-    { name: "Center", value: 44, color: "#8b5cf6" },
-    { name: "Right-Leaning", value: 28, color: "#ec4899" },
-  ];
+  //   // Not the most optimal way to do this but works for now.
+  //   // One problems is that if some of the values are too small, then the chart won't show them and you're stuck with only one emotion showing.
+  //   // Good news, it does work dynamically based on the results from the backend.
+  //   // TODO: Change the chart section so the side results aren't hardcoded but generated based on the results from the backend.
+
+  //   { name: "Sadness", value: Number((results.results.sentiment.all_scores[0].score * 100).toFixed(2)), color: "#3b82f6" },
+  //   { name: "Joy", value: Number((results.results.sentiment.all_scores[1].score * 100).toFixed(2)), color: "#fbbf24" },
+  //   { name: "Love", value: Number((results.results.sentiment.all_scores[2].score * 100).toFixed(2)), color: "#ec4899" },
+  //   { name: "Anger", value: Number((results.results.sentiment.all_scores[3].score * 100).toFixed(2)), color: "#ef4444" },
+  //   { name: "Fear", value: Number((results.results.sentiment.all_scores[4].score * 100).toFixed(2)), color: "#8b5cf6" },
+  //   { name: "Surprise", value: Number((results.results.sentiment.all_scores[5].score * 100).toFixed(2)), color: "#14b8a6" }
+
+  // ];
+
+  // This is a more dynamic way to generate the sentiment data for the chart.
+  // It will loop through the sentiment scores and create an array of objects with the name, value, and color for each emotion.
+  const sentimentData = sentimentScores.map((item: any) => ({
+    name: item.label.charAt(0).toUpperCase() + item.label.slice(1), // Capitalize first letter
+    value: Number((item.score * 100).toFixed(2)),
+    color: emotionColors[item.label] || "#6b7280", // Default to gray if no color defined
+  }));
+
+  const politicalBiasScores = results?.results?.political || [];
+
+  const politicalColors: Record<string, string> = {
+    Left: "#3b82f6",
+    Center: "#35bb47ff",
+    Right: "#d52629ff",
+  };
+
+  const politicalBiasData = politicalBiasScores.map((item: any) => ({
+    name: item.label.charAt(0).toUpperCase() + item.label.slice(1),
+    value: Number((item.score * 100).toFixed(2)),
+    color: politicalColors[item.label] || "#6b7280",
+  }));
 
   const tabs = [
     { id: "sentiment", label: "Sentiment Bias", icon: TrendingUp },
