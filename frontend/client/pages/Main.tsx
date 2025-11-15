@@ -6,16 +6,42 @@ tabs for Sentiment, Political, and Overview data visualizations.
 */
 
 import React, { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { BarChart3, TrendingUp, AlertCircle, FileText } from "lucide-react";
 
 export default function Main() {
   const [activeTab, setActiveTab] = useState("sentiment");
 
+  const location = useLocation();
+  const {results, entry} = location.state || {};
+
+  // console.log("Sadness score:", results?.results?.sentiment?.all_scores[0]);
+
+  if (!results) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-stone-100">
+        <p className="text-stone-800">No analysis results available.</p>
+      </div>
+    );
+  }
+
   const sentimentData = [
-    { name: "Positive", value: 45, color: "#10b981" },
-    { name: "Neutral", value: 30, color: "#f59e0b" },
-    { name: "Negative", value: 25, color: "#ef4444" },
+    // { name: "Positive", value: 45, color: "#10b981" },
+    // { name: "Neutral", value: 30, color: "#f59e0b" },
+    // { name: "Negative", value: 25, color: "#ef4444" },
+
+    // Not the most optimal way to do this but works for now.
+    // One problems is that if some of the values are too small, then the chart won't show them and you're stuck with only one emotion showing.
+    // Good news, it does work dynamically based on the results from the backend.
+    // TODO: Change the chart section so the side results aren't hardcoded but generated based on the results from the backend.
+    { name: "Sadness", value: Number((results.results.sentiment.all_scores[0].score * 100).toFixed(2)), color: "#3b82f6" },
+    { name: "Joy", value: Number((results.results.sentiment.all_scores[1].score * 100).toFixed(2)), color: "#fbbf24" },
+    { name: "Love", value: Number((results.results.sentiment.all_scores[2].score * 100).toFixed(2)), color: "#ec4899" },
+    { name: "Anger", value: Number((results.results.sentiment.all_scores[3].score * 100).toFixed(2)), color: "#ef4444" },
+    { name: "Fear", value: Number((results.results.sentiment.all_scores[4].score * 100).toFixed(2)), color: "#8b5cf6" },
+    { name: "Surprise", value: Number((results.results.sentiment.all_scores[5].score * 100).toFixed(2)), color: "#14b8a6" },
+
   ];
 
   const politicalBiasData = [

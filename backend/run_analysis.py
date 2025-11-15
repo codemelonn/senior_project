@@ -38,14 +38,15 @@ summarizer = None
 bias_model = None 
 bias_tokenizer = None 
 toxicity_model = None 
+larger_political_model = None
 
 
 def load_models():
     """
     Initialize all NLP models once (called during startup).
     """
-    
-    global emotion_classifier, summarizer, bias_model, bias_tokenizer, toxicity_model
+
+    global emotion_classifier, summarizer, bias_model, bias_tokenizer, toxicity_model, larger_political_model
 
     # debugging stmt
     print("\n ==== Loading models (this may take a moment)... ==== \n")
@@ -70,6 +71,14 @@ def load_models():
     bias_model_name = "cajcodes/DistilBERT-PoliticalBias"
     bias_model = DistilBertForSequenceClassification.from_pretrained(bias_model_name)
     bias_tokenizer = AutoTokenizer.from_pretrained(bias_model_name)
+    
+    # Larger political bias model (from larger_nlp_testing.py)
+    larger_political_model = pipeline(
+        "text-classification",
+        model="matous-volf/political-leaning-deberta-large",
+        tokenizer="microsoft/deberta-v3-large",
+    )
+    
 
     # Toxicity model
     toxicity_model = Detoxify('unbiased')
@@ -99,14 +108,33 @@ def run_sentiment_model(text: str, sensitivity: str):
     Returns:
         dict: A dictionary with sentiment labels and their corresponding scores.
     """
-    emotion_output = emotion_classifier(text)[0]
-    emotion_results = {
-        "label": emotion_output["label"],
-        "score": float(emotion_output["score"])
-    }
+    try:
+            if emotion_classifier is None:
+                raise RuntimeError("Emotion model not loaded")
 
-    return emotion_results
+            # Request full distribution
+            outputs = emotion_classifier(text, return_all_scores=True)[0]
 
+            # Convert everything to float and clean format
+            all_scores = [
+                {
+                    "label": item["label"],
+                    "score": float(item["score"])
+                }
+                for item in outputs
+            ]
+
+            # Find best emotion (highest score)
+            best_emotion = max(all_scores, key=lambda x: x["score"])
+
+            return {
+                "top": best_emotion,
+                "all_scores": all_scores
+            }
+
+    except Exception as e:
+        print(f"Emotion model error: {e}")
+        return None
 
 # This model is no good, but we can keep it here for now until we swap it out for the larger one.
 def run_political_model(text: str, sensitivity: str):
@@ -120,17 +148,45 @@ def run_political_model(text: str, sensitivity: str):
         dict: A dictionary with political bias labels and their corresponding scores.
     """
     political_bias_results = None
-    try: 
-        inputs = bias_tokenizer(text, return_tensors="pt", truncation=True, padding=True)
-        with torch.no_grad():
-            outputs = bias_model(**inputs)
-        probs = outputs.logits.softmax(dim=1).tolist()[0]
-        labels = ["left", "center", "right"]
-        political_bias_results = dict(zip(labels, [float(p) for p in probs]))
-    except Exception as e: 
-        print(f"Political bias model error: {e}")
+    # try: 
+    #     inputs = bias_tokenizer(text, return_tensors="pt", truncation=True, padding=True)
+    #     with torch.no_grad():
+    #         outputs = bias_model(**inputs)
+    #     probs = outputs.logits.softmax(dim=1).tolist()[0]
+    #     labels = ["left", "center", "right"]
+    #     political_bias_results = dict(zip(labels, [float(p) for p in probs]))
+    # except Exception as e: 
+    #     print(f"Political bias model error: {e}")
+    
+    try:
+        if larger_political_model is None:
+            raise RuntimeError("Political model not loaded")
 
-    return political_bias_results
+        # Request ALL scores
+        outputs = larger_political_model(text, return_all_scores=True)[0]
+
+        # Map HuggingFace label IDs to readable names
+        label_map = {
+            "LABEL_0": "Left",
+            "LABEL_1": "Center",
+            "LABEL_2": "Right",
+        }
+
+        # Convert each output dict
+        results = [
+            {
+                "label": label_map.get(item["label"], item["label"]),
+                "score": float(item["score"])
+            }
+            for item in outputs
+        ]
+
+        return results
+
+    except Exception as e:
+        print(f"Political bias model error: {e}")
+        return None
+
 
 # Toxicity model function here but might split this into different categories for different toxicity types (e.g. toxicity, severe toxicity, identity attack, etc.)
 # For now, we will just return the overall toxicity score.
