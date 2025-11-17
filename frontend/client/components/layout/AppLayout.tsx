@@ -48,22 +48,11 @@ const AppLayout = ({
       <span className="pointer-events-none absolute -left-24 top-[-10%] h-[28rem] w-[28rem] rounded-full bg-aurora-gradient blur-3xl opacity-80" />
       <span className="pointer-events-none absolute -right-40 bottom-[-10%] h-[32rem] w-[32rem] rounded-full bg-aurora-gradient blur-3xl opacity-80" />
       <div className="relative z-10 flex min-h-screen flex-col">
-        <header className="py-8">
+        <header className="py-2">
           <div className="container flex flex-wrap items-center justify-between gap-6">
-            <Link to="/" className="flex items-center gap-3 text-foreground">
-              <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-accent text-lg font-semibold text-primary-foreground shadow-lg shadow-primary/25">
-                IA
-              </span>
-              <div className="flex flex-col">
-                <span className="text-lg font-semibold tracking-tight">
-                  Input Aurora
-                </span>
-                <span className="text-sm text-foreground/60">
-                  Transform ideas instantly
-                </span>
-              </div>
-            </Link>
-            <nav className="flex items-center gap-1 rounded-full border border-white/40 bg-white/60 px-1 py-1 text-sm font-medium text-foreground shadow-sm backdrop-blur-md">
+            {/* Removed Input Aurora section */}
+
+           {/* <nav className="flex items-center gap-1 rounded-full border border-white/40 bg-white/60 px-1 py-1 text-sm font-medium text-foreground shadow-sm backdrop-blur-md">
               {navigationLinks.map((item) => (
                 <NavLink
                   key={item.to}
@@ -80,7 +69,8 @@ const AppLayout = ({
                   {item.name}
                 </NavLink>
               ))}
-            </nav>
+            </nav>*/}
+
           </div>
         </header>
         <main className={cn("container flex-1 pb-20", contentClassName)}>
