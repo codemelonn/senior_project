@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { en } from "zod/v4/locales";
 
-type BiasKeys = "sentiment" | "political" | "racial" | "gender";
+type BiasKeys = "sentiment" | "political" | "toxicity";
 type Sensitivity = "low" | "medium" | "high";
 
 export default function Index() {
@@ -29,12 +29,11 @@ export default function Index() {
   const [error, setError] = useState<string | null>(null);
   const [selectedBiases, setSelectedBiases] = useState<
     Record<BiasKeys, boolean>
-  >({
-    sentiment: true,
-    political: true,
-    racial: false,
-    gender: false,
-  });
+      >({
+        sentiment: true,
+        political: true,
+        toxicity: false,
+      });
   const [sensitivity, setSensitivity] = useState<Sensitivity>("medium");
 
   const navigate = useNavigate();
