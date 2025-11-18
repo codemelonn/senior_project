@@ -7,11 +7,12 @@ tabs for Sentiment, Political, and Overview data visualizations.
 
 import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Bar, CartesianGrid, XAxis, YAxis, BarChart } from "recharts";
 import { BarChart3, TrendingUp, AlertCircle, FileText } from "lucide-react";
 
 export default function Main() {
-  const [activeTab, setActiveTab] = useState("sentiment");
+  // const [activeTab, setActiveTab] = useState("sentiment");
+  
 
   const location = useLocation();
   const {results, entry} = location.state || {};
@@ -67,25 +68,76 @@ export default function Main() {
     color: emotionColors[item.label] || "#6b7280", // Default to gray if no color defined
   }));
 
+  // Store the political bias scores in a variable for easier access.
   const politicalBiasScores = results?.results?.political || [];
 
+  // Define colors for each political bias
   const politicalColors: Record<string, string> = {
     Left: "#3b82f6",
     Center: "#35bb47ff",
     Right: "#d52629ff",
   };
 
+  // Generate the political bias data for the chart.
+  // Similar to the sentiment data, it will loop through the political bias scores and create an array of objects with the name, value, and color for each bias.
   const politicalBiasData = politicalBiasScores.map((item: any) => ({
     name: item.label.charAt(0).toUpperCase() + item.label.slice(1),
     value: Number((item.score * 100).toFixed(2)),
     color: politicalColors[item.label] || "#6b7280",
   }));
 
+  // Store toxicity scores in a variable for easier access.
+  const toxicityScores = results?.results?.toxicity || {};
+
+  const toxicityColors: Record<string, string> = {
+    "Toxicity": "#ef4444",
+    "Severe Toxicity": "#b91c1c",
+    "Obscene": "#f97316",
+    "Identity Attack": "#a855f7",
+    "Insult": "#eab308",
+    "Threat": "#000000",
+    "Sexual Explicit": "#ec4899",
+  };
+
+  // Convert toxicity object -> chart array
+  const toxicityData = Object.entries(toxicityScores).map(([label, value]) => ({
+    name: label,                                            // Already properly formatted
+    value: Number(((value as number) * 100).toFixed(4)),               // Convert to percentage
+    color: toxicityColors[label] || "#6b7280",             // Default = gray
+  }));
+
+  // const tabs = [
+  //   { id: "sentiment", label: "Sentiment Bias", icon: TrendingUp },
+  //   { id: "political", label: "Political Bias", icon: BarChart3 },
+  //   { id: "toxicity", label: "Toxicity", icon: AlertCircle },
+  //   { id: "overview", label: "Overview", icon: FileText },
+  // ];
+
   const tabs = [
-    { id: "sentiment", label: "Sentiment Bias", icon: TrendingUp },
-    { id: "political", label: "Political Bias", icon: BarChart3 },
-    { id: "overview", label: "Overview", icon: FileText },
-  ];
+    results?.results?.sentiment && {
+      id: "sentiment",
+      label: "Sentiment Bias",
+      icon: TrendingUp
+    },
+    results?.results?.political && {
+      id: "political",
+      label: "Political Bias",
+      icon: BarChart3
+    },
+    results?.results?.toxicity && {
+      id: "toxicity",
+      label: "Toxicity",
+      icon: AlertCircle
+    },
+    {
+      id: "overview",
+      label: "Overview",
+      icon: FileText
+    },
+  ].filter(Boolean); // <-- removes null entries
+
+  const availableTabs = tabs.map(t => t.id);
+  const [activeTab, setActiveTab] = useState(availableTabs[0]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
@@ -294,6 +346,88 @@ export default function Main() {
               </div>
             </div>
           )}
+
+          {/* Toxicity View */}
+          {activeTab === "toxicity" && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Chart */}
+                <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-stone-200">
+                  <h3 className="text-xl font-semibold text-stone-800 mb-6">
+                    Toxicity Distribution
+                  </h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart 
+                      data={toxicityData}
+                      margin={{ top: 20, right: 20, left: 20, bottom: 25 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fill: "#444", fontSize: 12 }}
+                        interval={0}
+                        angle={-20}
+                        textAnchor="end"
+                      />
+                      <YAxis tick={{ fill: "#444", fontSize: 12 }} />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Bar dataKey="value">
+                        {toxicityData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+
+                  {/* Legend */}
+                  <div className="grid grid-cols-3 gap-3 mt-6">
+                    {toxicityData.map((item, idx) => (
+                      <div key={idx} className="text-center">
+                        <div
+                          className="w-4 h-4 rounded-full mx-auto mb-2"
+                          style={{ backgroundColor: item.color }}
+                        ></div>
+                        <p className="text-stone-700 font-medium text-sm">
+                          {item.name}
+                        </p>
+                        <p className="text-stone-500 text-xs">
+                          {item.value}%
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Stats */}
+                <div className="space-y-4">
+                  {toxicityData.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-2xl shadow-xl p-6 border-2"
+                      style={{
+                        backgroundColor: item.color + "20",
+                        borderColor: item.color,
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-lg font-semibold" style={{ color: item.color }}>
+                          {item.name}
+                        </h4>
+                        <span className="text-3xl font-bold" style={{ color: item.color }}>
+                          {item.value}%
+                        </span>
+                      </div>
+                      <p className="text-stone-700 text-sm">
+                        {item.value > 0.3
+                          ? "High likelihood of this toxic indicator present in the content."
+                          : "Low occurrence detected for this toxicity category."}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
 
           {/* Overview View */}
           {activeTab === "overview" && (

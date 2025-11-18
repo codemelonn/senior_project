@@ -67,11 +67,6 @@ def load_models():
         tokenizer=summarizer_name
     )
 
-    # Political bias model
-    bias_model_name = "cajcodes/DistilBERT-PoliticalBias"
-    bias_model = DistilBertForSequenceClassification.from_pretrained(bias_model_name)
-    bias_tokenizer = AutoTokenizer.from_pretrained(bias_model_name)
-    
     # Larger political bias model (from larger_nlp_testing.py)
     larger_political_model = pipeline(
         "text-classification",
@@ -79,7 +74,6 @@ def load_models():
         tokenizer="microsoft/deberta-v3-large",
     )
     
-
     # Toxicity model
     toxicity_model = Detoxify('unbiased')
 
@@ -90,11 +84,6 @@ def load_models():
 #   INDIVIDUAL MODEL FUNCTIONS   |   Author: Dominik T.
 
 Here is where we will have each individual model function defined so that when called from the frontend we can have separate outputs.
-
-TODO: Swap out political model for the larger, better one found in larger_nlp_testing.py.
-      Add toxicity model function here as well.
-      
-      Note: For the toxicity model, we may want to split the scores into their own categories to match the frontend display; or we can just return the overall toxicity score.
 # ===============================================
 """
 
@@ -146,18 +135,7 @@ def run_political_model(text: str, sensitivity: str):
 
     Returns:
         dict: A dictionary with political bias labels and their corresponding scores.
-    """
-    political_bias_results = None
-    # try: 
-    #     inputs = bias_tokenizer(text, return_tensors="pt", truncation=True, padding=True)
-    #     with torch.no_grad():
-    #         outputs = bias_model(**inputs)
-    #     probs = outputs.logits.softmax(dim=1).tolist()[0]
-    #     labels = ["left", "center", "right"]
-    #     political_bias_results = dict(zip(labels, [float(p) for p in probs]))
-    # except Exception as e: 
-    #     print(f"Political bias model error: {e}")
-    
+    """  
     try:
         if larger_political_model is None:
             raise RuntimeError("Political model not loaded")
@@ -189,13 +167,11 @@ def run_political_model(text: str, sensitivity: str):
 
 
 # Toxicity model function here but might split this into different categories for different toxicity types (e.g. toxicity, severe toxicity, identity attack, etc.)
-# For now, we will just return the overall toxicity score.
-# TODO: We need to organize how we are returning all the scores in general because we have a problem if you try running as is.
-#       Note: I changed main.py so that it wouldn't bug out and it just prints for now.
 def run_toxicity_model(text: str, sensitivity: str):
     """
     Run toxicity model on the input text using Detoxify.
-    Converts all numpy.float32 values to native Python floats.
+    Converts numpy.float32 values to native Python floats.
+    Formats label names (e.g., "identity_attack" → "Identity Attack").
     """
     try:
         if not isinstance(text, str):
@@ -203,13 +179,28 @@ def run_toxicity_model(text: str, sensitivity: str):
 
         results = toxicity_model.predict(text)
 
-        # Convert numpy.float32 → float
-        clean_results = {k: float(v) for k, v in results.items()}
+        clean_results = {}
+
+        for key, value in results.items():
+            original_key = key
+
+            # Special-case rename BEFORE formatting
+            if original_key == "sexual_explicit":
+                original_key = "sexually_explicit"
+
+            # Format labels: "identity_attack" → "Identity Attack"
+            formatted_key = original_key.replace("_", " ").title()
+
+            # Convert numpy.float32 → float
+            clean_results[formatted_key] = float(value)
 
         return clean_results
+
     except Exception as e:
         print("Toxicity model error:", e)
         return {"error": str(e)}
+
+
     
 def run_summarization_model(text: str, sensitivity: str):
     """

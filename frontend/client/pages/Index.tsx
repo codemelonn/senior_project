@@ -137,15 +137,20 @@ export default function Index() {
                         "Political Bias",
                         "Identify political leanings",
                       ],
+                      // [
+                      //   "racial",
+                      //   "Racial/Cultural Bias",
+                      //   "Check for cultural sensitivity",
+                      // ],
+                      // [
+                      //   "gender",
+                      //   "Gender/Inclusivity Bias",
+                      //   "Analyze inclusive language",
+                      // ],
                       [
-                        "racial",
-                        "Racial/Cultural Bias",
-                        "Check for cultural sensitivity",
-                      ],
-                      [
-                        "gender",
-                        "Gender/Inclusivity Bias",
-                        "Analyze inclusive language",
+                        "toxicity",
+                        "Toxicity",
+                        "Flag harmful or offensive content",
                       ],
                     ] as const
                   ).map(([key, label, desc]) => (

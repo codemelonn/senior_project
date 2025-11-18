@@ -39,11 +39,6 @@ app.add_middleware(
 class TextInput(BaseModel):
     text: str
     
-class AnalysisRequest(BaseModel):
-    entry: str
-    sensitivity: str
-    selectedBiases: Dict[str, bool]
-    
 
 # ------------
 #   Routes
@@ -54,25 +49,8 @@ class AnalysisRequest(BaseModel):
 def home():
     return {"message": "Bias Checker API running. Use POST /api/analyze or /api/analyze-file."}
 
-
-
-
-# @app.post("/api/analyze")
-# def analyze_text_endpoint(input: TextInput):
-#     """Receives JSON: {"text": "..."} and returns model results."""
-
-#     try:
-#         return analyze_text(input.text)
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-
-# 
-
 """ 
 This function analyzes the input text using multiple NLP models and returns the results.
-
-TODO: Connect this to the frontend so that the output matches what is expected. We already have the connection to the Index page.
-    All that is left is to connect the output of this function to Main.tsx.
 """
 @app.post("/api/analyze")
 async def analyze_text_endpoint(request: Request):
@@ -89,27 +67,15 @@ async def analyze_text_endpoint(request: Request):
         results = {}
 
         # Run only the selected analyses
-        # TODO: implement other models; "racial" | "gender"
         if selected.get("sentiment"):
             results["sentiment"] = run_sentiment_model(text, sensitivity)
         if selected.get("political"):
             results["political"] = run_political_model(text, sensitivity)
-
-        # This is for the toxicity model, but this will need to be changed depending on how we want to display the results as
-        # an overall score or a breakdown of the different types of toxicity.   
-        # TODO: There is a problem with how the results are being returned, so we need to adjust the format in how data is being returned.
-        #       Note this might have fixed it, but we'll need to test it later; but Detoxify returns its scores as NumPy types, so we need to convert them to floats.
-        #       FastAPI doesn't know how to serialize NumPy types, so we need to convert them to floats before returning.
-        #       Note: I changed the code in run_analysis.py to just return the results as
-        if selected.get("racial") or selected.get("gender"):
+        if selected.get("toxicity"):
             print("toxicity scores: ", run_toxicity_model(text, sensitivity))
+            results["toxicity"] = run_toxicity_model(text, sensitivity)
 
-        # If we change it for an overall score, the code will look something like this:
-        # if selected.get("toxicity"):
-        #     results["toxicity"] = run_toxicity_model(text, sensitivity)
-        # and we'll need to change Index.tsx to just show toxicity instead of race or gender.
-
-        print("Analysis results:", results)
+        # print("Analysis results:", results)
 
         return {"results": results, "sensitivity": sensitivity}
 
