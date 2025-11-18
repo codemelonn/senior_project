@@ -39,6 +39,7 @@ bias_model = None
 bias_tokenizer = None 
 toxicity_model = None 
 larger_political_model = None
+flan_summarizer = None
 
 
 def load_models():
@@ -46,7 +47,7 @@ def load_models():
     Initialize all NLP models once (called during startup).
     """
 
-    global emotion_classifier, summarizer, bias_model, bias_tokenizer, toxicity_model, larger_political_model
+    global emotion_classifier, summarizer, bias_model, bias_tokenizer, toxicity_model, larger_political_model, flan_summarizer
 
     # debugging stmt
     print("\n ==== Loading models (this may take a moment)... ==== \n")
@@ -76,6 +77,17 @@ def load_models():
     
     # Toxicity model
     toxicity_model = Detoxify('unbiased')
+
+    # Flan model for summarization (optional)
+    model_name = "google/flan-t5-large"
+
+    summarizer = pipeline(
+        "text2text-generation",
+        model=model_name,
+        max_length=256,
+        truncation=True
+    )
+
 
     print(" ==== Models loaded successfully! ==== \n")
     
@@ -217,6 +229,59 @@ def run_summarization_model(text: str, sensitivity: str):
     )[0]["summary_text"]
     
     return summary_results
+
+def run_flan_summarization_model(text: str, results: dict):
+    """
+    Dynamically summarizes whichever analyses are present.
+    FLAN-T5 works best with >25 words, so short inputs skip summarization.
+    """
+
+    # Setting the minimum word count for summarization, else it'll just repeat the text or give useless output.
+    min_words = 25
+    word_count = len(text.split())
+
+    if word_count < min_words:
+        return f"(Summary skipped: text too short — needs at least {min_words} words.)"
+
+    # Build the prompt with available analyses
+    sections = [f"Text:\n{text}\n"]
+
+    if "sentiment" in results:
+        sections.append(f"Sentiment Analysis:\n{results['sentiment']}\n")
+
+    if "political" in results:
+        sections.append(f"Political Bias Analysis:\n{results['political']}\n")
+
+    if "toxicity" in results:
+        sections.append(f"Toxicity Analysis:\n{results['toxicity']}\n")
+
+    # If somehow nothing is selected:
+    if len(sections) == 1:
+        return "(No analyses selected, so no summary generated.)"
+
+    # The instruction for FLAN-T5 to generate a concise summary based on the analyses.
+    # Right now, it's pretty basic and will require better prompting to get more useful summaries.
+    # Currently, it doesn't give back a summary it is just returning the numbers given from the analyses.
+    # TODO: Improve the prompt to get more meaningful summaries.
+    instruction = """
+        Task:
+        Provide a clear, concise explanation of how the available analyses relate to the meaning, tone, and themes of the text.
+        Do NOT repeat numerical scores.
+        Explain the relationships between sentiment, political leaning, and toxicity (if present).
+        """
+
+    prompt = "\n".join(sections) + instruction
+
+    print("FLAN prompt:\n", prompt)
+
+    # ---- Run FLAN-T5 ----
+    try:
+        summary = summarizer(prompt)[0]["generated_text"]
+        return summary
+    except Exception as e:
+        print("FLAN summarization error:", e)
+        return "(Summarization model error — unable to generate summary.)"
+
 
 
 # ===============================================

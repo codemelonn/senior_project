@@ -68,6 +68,8 @@ export default function Main() {
     color: emotionColors[item.label] || "#6b7280", // Default to gray if no color defined
   }));
 
+  const sortedSentimentData = [...sentimentData].sort((a, b) => b.value - a.value);
+
   // Store the political bias scores in a variable for easier access.
   const politicalBiasScores = results?.results?.political || [];
 
@@ -85,6 +87,59 @@ export default function Main() {
     value: Number((item.score * 100).toFixed(2)),
     color: politicalColors[item.label] || "#6b7280",
   }));
+
+  // This is for the stats poriton, just testing out a different way to generate the data for the stats section.
+  // Specifically, this is so that we can keep unique messages for each bias category.
+  const politicalData = [
+    {
+      label: "Left-Leaning",
+      value: results?.results?.political[0]?.score || 0,
+      highMessage: "Progressive language and framing detected.",
+      lowMessage: "Low presence of progressive framing detected.",
+      colors: {
+        bgFrom: "from-blue-50",
+        bgTo: "to-blue-100",
+        border: "border-blue-200",
+        title: "text-blue-900",
+        value: "text-blue-700",
+        para: "text-blue-800",
+      }
+    },
+    {
+      label: "Center",
+      value: results?.results?.political[1]?.score || 0,
+      highMessage: "Balanced political perspective maintained.",
+      lowMessage: "Low presence of centrist framing detected.",
+      colors: {
+        bgFrom: "from-purple-50",
+        bgTo: "to-purple-100",
+        border: "border-purple-200",
+        title: "text-purple-900",
+        value: "text-purple-700",
+        para: "text-purple-800",
+      }
+    },
+    {
+      label: "Right-Leaning",
+      value: results?.results?.political[2]?.score || 0,
+      highMessage: "Conservative language and framing detected.",
+      lowMessage: "Low presence of conservative framing detected.",
+      colors: {
+        bgFrom: "from-pink-50",
+        bgTo: "to-pink-100",
+        border: "border-pink-200",
+        title: "text-pink-900",
+        value: "text-pink-700",
+        para: "text-pink-800",
+      }
+    }
+  ];
+
+  const sortedPoliticalData = [...politicalData].sort((a, b) => b.value - a.value);
+
+  // For the political bias stats, we can use the same threshold as the sentiment analysis for consistency.
+  const threshold = 30; // 30% threshold for high/low occurrence
+
 
   // Store toxicity scores in a variable for easier access.
   const toxicityScores = results?.results?.toxicity || {};
@@ -237,7 +292,7 @@ export default function Main() {
                 </div>
 
                 {/* Stats */}
-                <div className="space-y-4">
+                {/* <div className="space-y-4">
                   <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl shadow-xl p-6 border-2 border-green-200">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-lg font-semibold text-green-900">Positive Tone</h4>
@@ -265,6 +320,38 @@ export default function Main() {
                     </div>
                     <p className="text-red-800 text-sm">Critical or pessimistic language detected</p>
                   </div>
+                </div> */}
+
+
+                {/* Leaving this for now since it does work, but if we want to group up the emotions, then
+                we will have to make some changes later to showcase that. */}
+                <div className="space-y-4">
+                  {sortedSentimentData.map((item, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-2xl shadow-xl p-6 border-2"
+                      style={{
+                        backgroundColor: item.color + "20",
+                        borderColor: item.color,
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-lg font-semibold" style={{ color: item.color }}>
+                          {item.name}
+                        </h4>
+                        <span className="text-3xl font-bold" style={{ color: item.color }}>
+                          {item.value}%
+                        </span>
+                        </div>
+                      <p className="text-stone-700 text-sm">
+                        {/* Will probably change this value to something greater for sentiment analysis, 
+                        but for now it just checks if the value is greater than 0.3 (30%) to determine if it's a high or low occurrence. */}
+                        {item.value > 0.3
+                          ? "High likelihood of this sentiment present in the content."
+                          : "Low occurrence detected for this sentiment category."}
+                      </p>
+                      </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -312,7 +399,7 @@ export default function Main() {
                 </div>
 
                 {/* Stats */}
-                <div className="space-y-4">
+                {/* <div className="space-y-4">
                   <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl shadow-xl p-6 border-2 border-blue-200">
                     <div className="flex items-center justify-between mb-3">
                       <h4 className="text-lg font-semibold text-blue-900">Left-Leaning</h4>
@@ -342,6 +429,32 @@ export default function Main() {
                       Conservative language and framing detected
                     </p>
                   </div>
+                </div> */}
+                <div className="space-y-4">
+                  {sortedPoliticalData.map((item, idx) => {
+                    const isHigh = item.value * 100 >= threshold;
+
+                    return (
+                      <div
+                        key={idx}
+                        className={`bg-gradient-to-br ${item.colors.bgFrom} ${item.colors.bgTo} 
+                                    rounded-2xl shadow-xl p-6 border-2 ${item.colors.border}`}
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className={`text-lg font-semibold ${item.colors.title}`}>
+                            {item.label}
+                          </h4>
+                          <span className={`text-3xl font-bold ${item.colors.value}`}>
+                            {(item.value * 100).toFixed(2)}%
+                          </span>
+                        </div>
+
+                        <p className={`${item.colors.para} text-sm`}>
+                          {isHigh ? item.highMessage : item.lowMessage}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -478,6 +591,34 @@ export default function Main() {
                   </ResponsiveContainer>
                 </div>
               </div>
+
+              {/* Toxicity Chart */}
+              <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-stone-200">
+                  <h3 className="text-xl font-semibold text-stone-800 mb-6">
+                    Toxicity Distribution
+                  </h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart 
+                      data={toxicityData}
+                      margin={{ top: 20, right: 20, left: 20, bottom: 25 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="name"
+                        tick={{ fill: "#444", fontSize: 12 }}
+                        interval={0}
+                        angle={-20}
+                        textAnchor="end"
+                      />
+                      <YAxis tick={{ fill: "#444", fontSize: 12 }} />
+                      <Tooltip content={<CustomTooltip />} />
+                      <Bar dataKey="value">
+                        {toxicityData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
 
               <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-stone-200">
                 <h3 className="text-xl font-semibold text-stone-800 mb-4">Analysis Summary</h3>

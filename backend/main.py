@@ -2,7 +2,7 @@ from typing import Dict
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from run_analysis import analyze_text, load_models, emotion_classifier, run_sentiment_model, run_political_model, run_toxicity_model
+from run_analysis import analyze_text, load_models, emotion_classifier, run_sentiment_model, run_political_model, run_toxicity_model, run_flan_summarization_model
 import uvicorn 
 
 # ---------------
@@ -72,11 +72,12 @@ async def analyze_text_endpoint(request: Request):
         if selected.get("political"):
             results["political"] = run_political_model(text, sensitivity)
         if selected.get("toxicity"):
-            print("toxicity scores: ", run_toxicity_model(text, sensitivity))
             results["toxicity"] = run_toxicity_model(text, sensitivity)
 
-        # print("Analysis results:", results)
-
+        summarization = run_flan_summarization_model(text, results)
+        if summarization:
+            print("Summarization result:", summarization)
+        
         return {"results": results, "sensitivity": sensitivity}
 
     except Exception as e:

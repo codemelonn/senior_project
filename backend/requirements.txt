@@ -6,3 +6,4 @@ detoxify
 numpy
 torch
 python-multipart
+transformers_interpret
