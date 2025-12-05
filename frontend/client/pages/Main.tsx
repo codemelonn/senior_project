@@ -169,6 +169,11 @@ export default function Main() {
   // ];
 
   const tabs = [
+    {
+      id: "overview",
+      label: "Overview",
+      icon: FileText
+    },
     results?.results?.sentiment && {
       id: "sentiment",
       label: "Sentiment Bias",
@@ -184,11 +189,7 @@ export default function Main() {
       label: "Toxicity",
       icon: AlertCircle
     },
-    {
-      id: "overview",
-      label: "Overview",
-      icon: FileText
-    },
+
   ].filter(Boolean); // <-- removes null entries
 
   const availableTabs = tabs.map(t => t.id);
@@ -481,7 +482,8 @@ export default function Main() {
                         angle={-20}
                         textAnchor="end"
                       />
-                      <YAxis tick={{ fill: "#444", fontSize: 12 }} />
+                      <YAxis tick={{ fill: "#444", fontSize: 12 }}
+                        domain={[0, 1]} />
                       <Tooltip content={<CustomTooltip />} />
                       <Bar dataKey="value">
                         {toxicityData.map((entry, index) => (
@@ -546,7 +548,9 @@ export default function Main() {
           {activeTab === "overview" && (
             <div className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
                 {/* Both Charts */}
+                {results?.results?.sentiment && (
                 <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-stone-200">
                   <h3 className="text-xl font-semibold text-stone-800 mb-6">Sentiment Analysis</h3>
                   <ResponsiveContainer width="100%" height={250}>
@@ -568,7 +572,9 @@ export default function Main() {
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
+                )}
 
+                {results?.results?.political && (
                 <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-stone-200">
                   <h3 className="text-xl font-semibold text-stone-800 mb-6">Political Bias</h3>
                   <ResponsiveContainer width="100%" height={250}>
@@ -590,9 +596,12 @@ export default function Main() {
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
+                )}
               </div>
+              
 
               {/* Toxicity Chart */}
+              {results?.results?.toxicity && (
               <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-stone-200">
                   <h3 className="text-xl font-semibold text-stone-800 mb-6">
                     Toxicity Distribution
@@ -609,7 +618,8 @@ export default function Main() {
                         angle={-20}
                         textAnchor="end"
                       />
-                      <YAxis tick={{ fill: "#444", fontSize: 12 }} />
+                      <YAxis tick={{ fill: "#444", fontSize: 12 }}
+                        domain={[0, 1]} />
                       <Tooltip content={<CustomTooltip />} />
                       <Bar dataKey="value">
                         {toxicityData.map((entry, index) => (
@@ -619,6 +629,7 @@ export default function Main() {
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
+              )}
 
               <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-stone-200">
                 <h3 className="text-xl font-semibold text-stone-800 mb-4">Analysis Summary</h3>
