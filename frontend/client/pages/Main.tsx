@@ -62,57 +62,38 @@ export default function Main() {
 
   // Generate the political bias data for the chart.
   // Similar to the sentiment data, it will loop through the political bias scores and create an array of objects with the name, value, and color for each bias.
-  const politicalBiasData = politicalBiasScores.map((item: any) => ({
-    name: item.label.charAt(0).toUpperCase() + item.label.slice(1),
-    value: Number((item.score * 100).toFixed(2)),
-    color: politicalColors[item.label] || "#6b7280",
-  }));
+  const politicalBiasData = politicalBiasScores.length
+  ? politicalBiasScores.map((item: any) => ({
+      name: item.label.charAt(0).toUpperCase() + item.label.slice(1),
+      value: Number((item.score * 100).toFixed(2)),
+      color: politicalColors[item.label] || "#6b7280",
+    }))
+  : [];
 
   // This is for the stats poriton, just testing out a different way to generate the data for the stats section.
   // Specifically, this is so that we can keep unique messages for each bias category.
   const politicalData = [
-    {
-      label: "Left-Leaning",
-      value: results?.results?.political[0]?.score || 0,
-      highMessage: "Progressive language and framing detected.",
-      lowMessage: "Low presence of progressive framing detected.",
-      colors: {
-        bgFrom: "from-blue-50",
-        bgTo: "to-blue-100",
-        border: "border-blue-200",
-        title: "text-blue-900",
-        value: "text-blue-700",
-        para: "text-blue-800",
-      }
-    },
-    {
-      label: "Center",
-      value: results?.results?.political[1]?.score || 0,
-      highMessage: "Balanced political perspective maintained.",
-      lowMessage: "Low presence of centrist framing detected.",
-      colors: {
-        bgFrom: "from-purple-50",
-        bgTo: "to-purple-100",
-        border: "border-purple-200",
-        title: "text-purple-900",
-        value: "text-purple-700",
-        para: "text-purple-800",
-      }
-    },
-    {
-      label: "Right-Leaning",
-      value: results?.results?.political[2]?.score || 0,
-      highMessage: "Conservative language and framing detected.",
-      lowMessage: "Low presence of conservative framing detected.",
-      colors: {
-        bgFrom: "from-pink-50",
-        bgTo: "to-pink-100",
-        border: "border-pink-200",
-        title: "text-pink-900",
-        value: "text-pink-700",
-        para: "text-pink-800",
-      }
-    }
+  {
+    label: "Left-Leaning",
+    value: results?.results?.political?.[0]?.score || 0,
+    highMessage: "Progressive language and framing detected.",
+    lowMessage: "Low presence of progressive framing detected.",
+    colors: { bgFrom: "from-blue-50", bgTo: "to-blue-100", border: "border-blue-200", title: "text-blue-900", value: "text-blue-700", para: "text-blue-800" }
+  },
+  {
+    label: "Center",
+    value: results?.results?.political?.[1]?.score || 0,
+    highMessage: "Balanced political perspective maintained.",
+    lowMessage: "Low presence of centrist framing detected.",
+    colors: { bgFrom: "from-purple-50", bgTo: "to-purple-100", border: "border-purple-200", title: "text-purple-900", value: "text-purple-700", para: "text-purple-800" }
+  },
+  {
+    label: "Right-Leaning",
+    value: results?.results?.political?.[2]?.score || 0,
+    highMessage: "Conservative language and framing detected.",
+    lowMessage: "Low presence of conservative framing detected.",
+    colors: { bgFrom: "from-pink-50", bgTo: "to-pink-100", border: "border-pink-200", title: "text-pink-900", value: "text-pink-700", para: "text-pink-800" }
+  }
   ];
 
   const sortedPoliticalData = [...politicalData].sort((a, b) => b.value - a.value);
