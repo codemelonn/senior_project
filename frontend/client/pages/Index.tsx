@@ -1,15 +1,8 @@
 /*
-
 Index ("/") — Landing & Input
-
-This page lets you paste or type content, 
-choose what kinds of bias to check, set sensitivity, and start analysis.
-On submit, it routes to “/main” with your input in the query string.
-
-TODO: Connect the file upload button to backend API for text extraction.
 */
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AppLayout from "@/components/layout/AppLayout";
 import {
@@ -17,36 +10,104 @@ import {
   Upload,
   AlertCircle,
   CheckCircle,
-  Settings,
+  XCircle,
 } from "lucide-react";
-import { en } from "zod/v4/locales";
 
 type BiasKeys = "sentiment" | "political" | "toxicity";
 type Sensitivity = "low" | "medium" | "high";
 
 export default function Index() {
   const [entry, setEntry] = useState("");
+  const [fileUploaded, setFileUploaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fileUploading, setFileUploading] = useState(false);
+  const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const [selectedBiases, setSelectedBiases] = useState<
     Record<BiasKeys, boolean>
-      >({
-        sentiment: true,
-        political: true,
-        toxicity: false,
-      });
+  >({
+    sentiment: true,
+    political: true,
+    toxicity: false,
+  });
+
   const [sensitivity, setSensitivity] = useState<Sensitivity>("medium");
 
   const navigate = useNavigate();
 
   const wordCount = useMemo(
     () => (entry ? entry.trim().split(/\s+/).filter(Boolean).length : 0),
-    [entry],
+    [entry]
   );
 
   const handleBiasToggle = (key: BiasKeys) =>
     setSelectedBiases((prev) => ({ ...prev, [key]: !prev[key] }));
 
-  // Here is where we handle the form submission and connect to the backend API
+  // -------------------------------
+  //   Upload File → Extract Text
+  // -------------------------------
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setError(null);
+    setFileUploading(true);
+    setUploadedFileName(file.name);
+
+    const validTypes = ["text/plain", "application/pdf"];
+    if (!validTypes.includes(file.type)) {
+      setError("Please upload only .txt or .pdf files.");
+      setFileUploading(false);
+      return;
+    }
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("http://localhost:8000/api/analyze-file", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) throw new Error(`Upload failed: ${response.status}`);
+
+      const data = await response.json();
+
+      if (!data.extracted_text) {
+        throw new Error("Server returned no text");
+      }
+
+      setEntry(data.extracted_text);
+      setFileUploaded(true);
+    } catch (err) {
+      setError("Error processing file. Try a different file.");
+      console.error(err);
+    } finally {
+      setFileUploading(false);
+    }
+  };
+
+  // -------------------------------
+  //   CANCEL UPLOAD → Reset UI & File Input
+  // -------------------------------
+  const handleCancelUpload = () => {
+    setEntry("");
+    setFileUploaded(false);
+    setUploadedFileName(null);
+    setError(null);
+
+    // **Reset the actual file input** so reupload works
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  // -------------------------------
+  //   Submit when Analyze is clicked
+  // -------------------------------
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const trimmed = entry.trim();
@@ -58,7 +119,6 @@ export default function Index() {
 
     setError(null);
 
-    // Prepare payload for backend, might not need sensitivity depending.
     const payload = {
       entry: trimmed,
       sensitivity,
@@ -66,7 +126,6 @@ export default function Index() {
     };
 
     try {
-      // Send POST request to backend API
       const response = await fetch("http://localhost:8000/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -79,13 +138,9 @@ export default function Index() {
 
       navigate("/main", { state: { results, entry: trimmed } });
     } catch (error) {
-      setError(
-        "An error occurred while processing your request. Please try again.",
-      );
-      console.error("Error during analysis:", error);
+      setError("Error analyzing content. Please try again.");
+      console.error("Analysis error:", error);
     }
-    // What was before we connected to the backend.
-    // navigate(`/main?${params.toString()}`);
   };
 
   return (
@@ -103,25 +158,19 @@ export default function Index() {
           <h1 className="text-2xl md:text-3xl font-bold text-stone-900">
             Analyze Your Content
           </h1>
-          <p className="text-stone-600">
-            Enter text and choose what to check for.
-          </p>
+          <p className="text-stone-600">Enter text or upload a file.</p>
         </div>
 
-        {/* TWO-COLUMN LAYOUT */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* LEFT COLUMN */}
           <div className="flex flex-col gap-6">
-            {/* TOP ROW OF TWO BOXES */}
+            {/* Bias Selection */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Bias Types */}
               <div className="rounded-2xl border-2 border-stone-200 p-5 min-h-[360px]">
-                <div className="flex items-center gap-3 mb-3">
-                  <Settings className="w-5 h-5 text-stone-700" />
-                  <h3 className="text-lg font-semibold text-stone-800">
-                    Select Bias Types
-                  </h3>
-                </div>
+                <h3 className="text-lg font-semibold text-stone-800 mb-3">
+                  Select Bias Types
+                </h3>
 
                 <div className="space-y-2">
                   {(
@@ -136,16 +185,6 @@ export default function Index() {
                         "Political Bias",
                         "Identify political leanings",
                       ],
-                      // [
-                      //   "racial",
-                      //   "Racial/Cultural Bias",
-                      //   "Check for cultural sensitivity",
-                      // ],
-                      // [
-                      //   "gender",
-                      //   "Gender/Inclusivity Bias",
-                      //   "Analyze inclusive language",
-                      // ],
                       [
                         "toxicity",
                         "Toxicity",
@@ -194,12 +233,6 @@ export default function Index() {
                       <p className="font-medium text-stone-800">
                         {level[0].toUpperCase() + level.slice(1)}
                       </p>
-                      <p className="text-xs text-stone-600">
-                        {level === "low" && "Flag only strong bias"}
-                        {level === "medium" &&
-                          "Balanced detection (recommended)"}
-                        {level === "high" && "Flag all potential bias"}
-                      </p>
                     </div>
                   </label>
                 ))}
@@ -208,20 +241,19 @@ export default function Index() {
                   <div className="flex items-start gap-2">
                     <CheckCircle className="w-5 h-5 text-amber-600 mt-0.5" />
                     <p className="text-sm text-amber-900">
-                      Higher sensitivity may produce more false positives but
-                      ensures comprehensive analysis.
+                      Higher sensitivity may catch subtle bias but may increase
+                      false positives.
                     </p>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* DISCLAIMER — moved here */}
+            {/* Disclaimer */}
             <div className="flex items-start gap-3 rounded-xl bg-emerald-800 p-4 text-emerald-100">
               <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
               <p className="text-sm">
-                Analysis is based on NLP models trained on neutral datasets to
-                encourage objective evaluation.
+                Analysis is based on NLP models trained on neutral datasets.
               </p>
             </div>
           </div>
@@ -235,40 +267,77 @@ export default function Index() {
               </h2>
             </div>
 
-            <textarea
-              id="entry"
-              name="entry"
-              rows={12}
-              value={entry}
-              onChange={(e) => setEntry(e.target.value)}
-              placeholder="Paste content here… (articles, posts, essays, etc.)"
-              className="w-full resize-none rounded-xl border-2 border-stone-300 bg-emerald-50/50 px-5 py-4 text-base text-stone-900 shadow-inner focus:border-stone-500 focus:outline-none"
-            />
+            {/* ❗ Hide textarea when file uploaded */}
+            {!fileUploaded && (
+              <textarea
+                id="entry"
+                name="entry"
+                rows={12}
+                value={entry}
+                onChange={(e) => setEntry(e.target.value)}
+                placeholder="Paste content here… or upload a .txt/.pdf file."
+                className="w-full resize-none rounded-xl border-2 border-stone-300 bg-emerald-50/50 px-5 py-4 text-base text-stone-900 shadow-inner focus:border-stone-500 focus:outline-none"
+              />
+            )}
 
+            {/* FILE UPLOADED STATE */}
+            {fileUploaded && (
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-sm text-stone-700 flex justify-between items-center">
+                <span>
+                  <strong>{uploadedFileName}</strong> uploaded and processed.
+                </span>
+
+                <button
+                  type="button"
+                  onClick={handleCancelUpload}
+                  className="flex items-center gap-1 text-red-600 hover:text-red-700 font-medium"
+                >
+                  <XCircle className="w-4 h-4" />
+                  Cancel
+                </button>
+              </div>
+            )}
+
+            {/* Word + Character Count */}
             <div className="mt-4 flex items-center justify-between">
               <p className="text-sm text-stone-500">
                 {entry.length} characters • {wordCount}{" "}
                 {wordCount === 1 ? "word" : "words"}
               </p>
 
-              <button
-                type="button"
-                className="flex items-center gap-2 rounded-lg px-3 py-2 text-stone-600 hover:bg-stone-100 transition"
-                onClick={() => alert("File upload coming soon")}
-              >
+              {/* File Upload */}
+              <label className="flex items-center gap-2 rounded-lg px-3 py-2 text-stone-600 hover:bg-stone-100 cursor-pointer transition">
                 <Upload className="w-4 h-4" />
-                <span className="text-sm font-medium">Upload File</span>
-              </button>
+                <span className="text-sm font-medium">
+                  {fileUploading ? "Processing..." : "Upload File"}
+                </span>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".txt, .pdf"
+                  className="hidden"
+                  onChange={handleFileUpload}
+                  disabled={fileUploading}
+                />
+              </label>
             </div>
 
-            {/* SUBMIT BUTTON */}
+            {/* Submit Button */}
             <button
               type="submit"
-              disabled={!entry.trim()}
+              disabled={!entry.trim() || fileUploading}
               className="mt-6 w-full rounded-xl bg-emerald-500 py-3 text-base font-semibold text-white shadow-md hover:bg-emerald-600 transition disabled:opacity-50"
             >
               Analyze Content
             </button>
+
+            {error && (
+              <p className="text-sm text-red-600 mt-3 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4" />
+                {error}
+              </p>
+            )}
           </div>
         </div>
       </form>

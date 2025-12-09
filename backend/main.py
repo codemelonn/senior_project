@@ -2,8 +2,17 @@ from typing import Dict
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from run_analysis import analyze_text, load_models, emotion_classifier, run_sentiment_model, run_political_model, run_toxicity_model, run_flan_summarization_model
+from run_analysis import (
+    analyze_text,
+    load_models, 
+    run_sentiment_model, 
+    run_political_model, 
+    run_toxicity_model, 
+    run_flan_summarization_model    
+)
 import uvicorn 
+import io
+from PyPDF2 import PdfReader
 
 # ---------------
 #   App Config
@@ -86,26 +95,38 @@ async def analyze_text_endpoint(request: Request):
 
 @app.post("/api/analyze-file")
 async def analyze_file(file: UploadFile = File(...)):
-    """Accepts a .txt file upload and returns analysis results."""
+    """
+    Accepts .txt or .pdf, extracts text, and returns ONLY the text.
+    No analysis is performed here now.
+    """
 
-    if file.content_type not in ("text/plain",):
-        raise HTTPException(status_code=415, detail="Only text/plain files are supported.")
+    if file.content_type not in ("text/plain", "application/pdf"):
+        raise HTTPException(
+            status_code=415,
+            detail="Only .txt and .pdf files are supported."
+        )
 
     data = await file.read()
+
     if not data:
         raise HTTPException(status_code=400, detail="Empty file")
-    if len(data) > 1_000_000:
-        raise HTTPException(status_code=413, detail="File too large (limit 1MB)")
 
-    try:
+    if len(data) > 2_000_000:  # 2 MB
+        raise HTTPException(status_code=413, detail="File too large")
+    
+    # Extract text
+    if file.content_type == "text/plain":
         text = data.decode("utf-8", errors="ignore")
-    except Exception:
-        raise HTTPException(status_code=400, detail="Unable to decode file")
 
-    try:
-        return analyze_text(text)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    else:  # PDF
+        try:
+            pdf_stream = io.BytesIO(data)
+            reader = PdfReader(pdf_stream)
+            text = "\n".join(page.extract_text() or "" for page in reader.pages)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"PDF extraction failed: {e}")
+
+    return { "extracted_text": text }
     
 
 

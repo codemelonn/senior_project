@@ -12,10 +12,10 @@ import { BarChart3, TrendingUp, AlertCircle, FileText } from "lucide-react";
 
 export default function Main() {
   // const [activeTab, setActiveTab] = useState("sentiment");
-  
+
 
   const location = useLocation();
-  const {results, entry} = location.state || {};
+  const { results, entry } = location.state || {};
 
   // console.log("Sadness score:", results?.results?.sentiment?.all_scores[0]);
 
@@ -39,26 +39,6 @@ export default function Main() {
 
   // This sames a safe way to access the sentiment scores without worrying about undefined values.
   const sentimentScores = results?.results?.sentiment?.all_scores || [];
-
-  // Commenting this out since it's not optimal and safe, but will keep it for reference.
-  // const sentimentData = [
-  //   // { name: "Positive", value: 45, color: "#10b981" },
-  //   // { name: "Neutral", value: 30, color: "#f59e0b" },
-  //   // { name: "Negative", value: 25, color: "#ef4444" },
-
-  //   // Not the most optimal way to do this but works for now.
-  //   // One problems is that if some of the values are too small, then the chart won't show them and you're stuck with only one emotion showing.
-  //   // Good news, it does work dynamically based on the results from the backend.
-  //   // TODO: Change the chart section so the side results aren't hardcoded but generated based on the results from the backend.
-
-  //   { name: "Sadness", value: Number((results.results.sentiment.all_scores[0].score * 100).toFixed(2)), color: "#3b82f6" },
-  //   { name: "Joy", value: Number((results.results.sentiment.all_scores[1].score * 100).toFixed(2)), color: "#fbbf24" },
-  //   { name: "Love", value: Number((results.results.sentiment.all_scores[2].score * 100).toFixed(2)), color: "#ec4899" },
-  //   { name: "Anger", value: Number((results.results.sentiment.all_scores[3].score * 100).toFixed(2)), color: "#ef4444" },
-  //   { name: "Fear", value: Number((results.results.sentiment.all_scores[4].score * 100).toFixed(2)), color: "#8b5cf6" },
-  //   { name: "Surprise", value: Number((results.results.sentiment.all_scores[5].score * 100).toFixed(2)), color: "#14b8a6" }
-
-  // ];
 
   // This is a more dynamic way to generate the sentiment data for the chart.
   // It will loop through the sentiment scores and create an array of objects with the name, value, and color for each emotion.
@@ -161,13 +141,6 @@ export default function Main() {
     color: toxicityColors[label] || "#6b7280",             // Default = gray
   }));
 
-  // const tabs = [
-  //   { id: "sentiment", label: "Sentiment Bias", icon: TrendingUp },
-  //   { id: "political", label: "Political Bias", icon: BarChart3 },
-  //   { id: "toxicity", label: "Toxicity", icon: AlertCircle },
-  //   { id: "overview", label: "Overview", icon: FileText },
-  // ];
-
   const tabs = [
     {
       id: "overview",
@@ -221,11 +194,10 @@ export default function Main() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                activeTab === tab.id
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === tab.id
                   ? "text-stone-800 shadow-lg"
                   : "text-stone-700 hover:bg-stone-700/20"
-              }`}
+                }`}
               style={activeTab === tab.id ? { backgroundColor: "#b8c9a8" } : {}}
             >
               <tab.icon className="w-5 h-5" />
@@ -252,6 +224,17 @@ export default function Main() {
             </h2>
             <p className="text-stone-600">Real-time bias detection and analysis</p>
           </div>
+
+          {/* Original Text Display */}
+          {entry && (
+            <div className="flex justify-center mb-8">
+              <div className="bg-white border-2 border-stone-200 shadow-xl rounded-2xl p-6 max-w-3xl w-full text-center">
+                <h3 className="text-xl font-semibold text-stone-800 mb-3">Analyzed Text</h3>
+                <p className="text-stone-700 whitespace-pre-wrap">{entry}</p>
+              </div>
+            </div>
+          )}
+
 
           {/* Sentiment Bias View */}
           {activeTab === "sentiment" && (
@@ -292,37 +275,6 @@ export default function Main() {
                   </div>
                 </div>
 
-                {/* Stats */}
-                {/* <div className="space-y-4">
-                  <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl shadow-xl p-6 border-2 border-green-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-lg font-semibold text-green-900">Positive Tone</h4>
-                      <span className="text-3xl font-bold text-green-700">45%</span>
-                    </div>
-                    <p className="text-green-800 text-sm">
-                      Content shows optimistic and constructive language
-                    </p>
-                  </div>
-
-                  <div className="bg-gradient-to-br from-amber-50 to-amber-100 rounded-2xl shadow-xl p-6 border-2 border-amber-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-lg font-semibold text-amber-900">Neutral Tone</h4>
-                      <span className="text-3xl font-bold text-amber-700">30%</span>
-                    </div>
-                    <p className="text-amber-800 text-sm">
-                      Balanced and objective presentation of information
-                    </p>
-                  </div>
-
-                  <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-2xl shadow-xl p-6 border-2 border-red-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-lg font-semibold text-red-900">Negative Tone</h4>
-                      <span className="text-3xl font-bold text-red-700">25%</span>
-                    </div>
-                    <p className="text-red-800 text-sm">Critical or pessimistic language detected</p>
-                  </div>
-                </div> */}
-
 
                 {/* Leaving this for now since it does work, but if we want to group up the emotions, then
                 we will have to make some changes later to showcase that. */}
@@ -343,7 +295,7 @@ export default function Main() {
                         <span className="text-3xl font-bold" style={{ color: item.color }}>
                           {item.value}%
                         </span>
-                        </div>
+                      </div>
                       <p className="text-stone-700 text-sm">
                         {/* Will probably change this value to something greater for sentiment analysis, 
                         but for now it just checks if the value is greater than 0.3 (30%) to determine if it's a high or low occurrence. */}
@@ -351,7 +303,7 @@ export default function Main() {
                           ? "High likelihood of this sentiment present in the content."
                           : "Low occurrence detected for this sentiment category."}
                       </p>
-                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -399,38 +351,6 @@ export default function Main() {
                   </div>
                 </div>
 
-                {/* Stats */}
-                {/* <div className="space-y-4">
-                  <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl shadow-xl p-6 border-2 border-blue-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-lg font-semibold text-blue-900">Left-Leaning</h4>
-                      <span className="text-3xl font-bold text-blue-700">28%</span>
-                    </div>
-                    <p className="text-blue-800 text-sm">
-                      Progressive language and framing detected
-                    </p>
-                  </div>
-
-                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl shadow-xl p-6 border-2 border-purple-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-lg font-semibold text-purple-900">Center</h4>
-                      <span className="text-3xl font-bold text-purple-700">44%</span>
-                    </div>
-                    <p className="text-purple-800 text-sm">
-                      Balanced political perspective maintained
-                    </p>
-                  </div>
-
-                  <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-2xl shadow-xl p-6 border-2 border-pink-200">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="text-lg font-semibold text-pink-900">Right-Leaning</h4>
-                      <span className="text-3xl font-bold text-pink-700">28%</span>
-                    </div>
-                    <p className="text-pink-800 text-sm">
-                      Conservative language and framing detected
-                    </p>
-                  </div>
-                </div> */}
                 <div className="space-y-4">
                   {sortedPoliticalData.map((item, idx) => {
                     const isHigh = item.value * 100 >= threshold;
@@ -471,7 +391,7 @@ export default function Main() {
                     Toxicity Distribution
                   </h3>
                   <ResponsiveContainer width="100%" height={300}>
-                    <BarChart 
+                    <BarChart
                       data={toxicityData}
                       margin={{ top: 20, right: 20, left: 20, bottom: 25 }}>
                       <CartesianGrid strokeDasharray="3 3" />
@@ -551,63 +471,63 @@ export default function Main() {
 
                 {/* Both Charts */}
                 {results?.results?.sentiment && (
-                <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-stone-200">
-                  <h3 className="text-xl font-semibold text-stone-800 mb-6">Sentiment Analysis</h3>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                      <Pie
-                        data={sentimentData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {sentimentData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<CustomTooltip />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
+                  <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-stone-200">
+                    <h3 className="text-xl font-semibold text-stone-800 mb-6">Sentiment Analysis</h3>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <PieChart>
+                        <Pie
+                          data={sentimentData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={100}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {sentimentData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip content={<CustomTooltip />} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
                 )}
 
                 {results?.results?.political && (
-                <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-stone-200">
-                  <h3 className="text-xl font-semibold text-stone-800 mb-6">Political Bias</h3>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                      <Pie
-                        data={politicalBiasData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={100}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {politicalBiasData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip content={<CustomTooltip />} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
+                  <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-stone-200">
+                    <h3 className="text-xl font-semibold text-stone-800 mb-6">Political Bias</h3>
+                    <ResponsiveContainer width="100%" height={250}>
+                      <PieChart>
+                        <Pie
+                          data={politicalBiasData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={60}
+                          outerRadius={100}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {politicalBiasData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip content={<CustomTooltip />} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
                 )}
               </div>
-              
+
 
               {/* Toxicity Chart */}
               {results?.results?.toxicity && (
-              <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-stone-200">
+                <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-stone-200">
                   <h3 className="text-xl font-semibold text-stone-800 mb-6">
                     Toxicity Distribution
                   </h3>
                   <ResponsiveContainer width="100%" height={300}>
-                    <BarChart 
+                    <BarChart
                       data={toxicityData}
                       margin={{ top: 20, right: 20, left: 20, bottom: 25 }}>
                       <CartesianGrid strokeDasharray="3 3" />
