@@ -36,7 +36,13 @@ text = [
     "Traditional family values should be preserved and promoted in society.",
     "We need to secure our borders and enforce immigration laws more strictly.",
     "The free market, not regulation, is the best way to ensure prosperity."
+
+    # Testing:
+    "communism, political and economic doctrine that aims to replace private property and a profit-based economy with public ownership and communal control of at least the major means of production (e.g., mines, mills, and factories) and the natural resources of a society. Communism is thus a form of socialism—a higher and more advanced form, according to its advocates. Exactly how communism differs from socialism has long been a matter of debate, but the distinction rests largely on the communists’ adherence to the revolutionary socialism of Karl Marx."
+    
 ]
+
+# Lowering taxes and reducing government spending will strengthen the economy., Private businesses, not the government, drive innovation and job creation., Traditional family values should be preserved and promoted in society., We need to secure our borders and enforce immigration laws more strictly., The free market, not regulation, is the best way to ensure prosperity.
 
 print("---- Political Bias Detection Results w/ 3 Labels ----")
 

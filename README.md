@@ -101,6 +101,8 @@
 
     This varies by your Python version (e.g., 3.12). Always delete or ignore these before pushing.
 
+    ![Example of Full Analysis](./assets/demo_gif.gif)
+
     🧾 Summary
 
         - **Frontend:** Built with React (Fusion Starter).  

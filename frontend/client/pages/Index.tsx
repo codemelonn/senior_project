@@ -149,6 +149,12 @@ export default function Index() {
       backgroundClassName="bg-gradient-to-br from-stone-100 via-amber-50 to-stone-200"
       contentClassName="w-full"
     >
+      <button
+        onClick={() => navigate("/")}
+        className="mb-6 inline-flex items-center gap-2 rounded-xl bg-stone-700 px-4 py-2 text-white text-sm font-medium shadow hover:bg-stone-800 transition"
+      >
+        ← Home
+      </button>
       <form
         onSubmit={handleSubmit}
         className="w-full space-y-6 rounded-3xl border border-emerald-200 bg-white/90 p-8 shadow-lg backdrop-blur"
@@ -165,7 +171,12 @@ export default function Index() {
           {/* LEFT COLUMN */}
           <div className="flex flex-col gap-6">
             {/* Bias Selection */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+
+            {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> */}
+            <div className="grid grid-cols-1 gap-6">
+
+              
               {/* Bias Types */}
               <div className="rounded-2xl border-2 border-stone-200 p-5 min-h-[360px]">
                 <h3 className="text-lg font-semibold text-stone-800 mb-3">
@@ -212,7 +223,7 @@ export default function Index() {
               </div>
 
               {/* Sensitivity */}
-              <div className="rounded-2xl border-2 border-stone-200 p-5 min-h-[360px]">
+              {/* <div className="rounded-2xl border-2 border-stone-200 p-5 min-h-[360px]">
                 <h3 className="text-lg font-semibold text-stone-800 mb-3">
                   Sensitivity Level
                 </h3>
@@ -246,7 +257,7 @@ export default function Index() {
                     </p>
                   </div>
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Disclaimer */}

@@ -9,6 +9,7 @@ import React, { useState } from "react";
 import { useLocation } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Bar, CartesianGrid, XAxis, YAxis, BarChart } from "recharts";
 import { BarChart3, TrendingUp, AlertCircle, FileText } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function Main() {
   // const [activeTab, setActiveTab] = useState("sentiment");
@@ -16,6 +17,7 @@ export default function Main() {
 
   const location = useLocation();
   const { results, entry } = location.state || {};
+  const navigate = useNavigate();
 
   // console.log("Sadness score:", results?.results?.sentiment?.all_scores[0]);
 
@@ -63,37 +65,37 @@ export default function Main() {
   // Generate the political bias data for the chart.
   // Similar to the sentiment data, it will loop through the political bias scores and create an array of objects with the name, value, and color for each bias.
   const politicalBiasData = politicalBiasScores.length
-  ? politicalBiasScores.map((item: any) => ({
+    ? politicalBiasScores.map((item: any) => ({
       name: item.label.charAt(0).toUpperCase() + item.label.slice(1),
       value: Number((item.score * 100).toFixed(2)),
       color: politicalColors[item.label] || "#6b7280",
     }))
-  : [];
+    : [];
 
   // This is for the stats poriton, just testing out a different way to generate the data for the stats section.
   // Specifically, this is so that we can keep unique messages for each bias category.
   const politicalData = [
-  {
-    label: "Left-Leaning",
-    value: results?.results?.political?.[0]?.score || 0,
-    highMessage: "Progressive language and framing detected.",
-    lowMessage: "Low presence of progressive framing detected.",
-    colors: { bgFrom: "from-blue-50", bgTo: "to-blue-100", border: "border-blue-200", title: "text-blue-900", value: "text-blue-700", para: "text-blue-800" }
-  },
-  {
-    label: "Center",
-    value: results?.results?.political?.[1]?.score || 0,
-    highMessage: "Balanced political perspective maintained.",
-    lowMessage: "Low presence of centrist framing detected.",
-    colors: { bgFrom: "from-purple-50", bgTo: "to-purple-100", border: "border-purple-200", title: "text-purple-900", value: "text-purple-700", para: "text-purple-800" }
-  },
-  {
-    label: "Right-Leaning",
-    value: results?.results?.political?.[2]?.score || 0,
-    highMessage: "Conservative language and framing detected.",
-    lowMessage: "Low presence of conservative framing detected.",
-    colors: { bgFrom: "from-pink-50", bgTo: "to-pink-100", border: "border-pink-200", title: "text-pink-900", value: "text-pink-700", para: "text-pink-800" }
-  }
+    {
+      label: "Left-Leaning",
+      value: results?.results?.political?.[0]?.score || 0,
+      highMessage: "Progressive language and framing detected.",
+      lowMessage: "Low presence of progressive framing detected.",
+      colors: { bgFrom: "from-blue-50", bgTo: "to-blue-100", border: "border-blue-200", title: "text-blue-900", value: "text-blue-700", para: "text-blue-800" }
+    },
+    {
+      label: "Center",
+      value: results?.results?.political?.[1]?.score || 0,
+      highMessage: "Balanced political perspective maintained.",
+      lowMessage: "Low presence of centrist framing detected.",
+      colors: { bgFrom: "from-purple-50", bgTo: "to-purple-100", border: "border-purple-200", title: "text-purple-900", value: "text-purple-700", para: "text-purple-800" }
+    },
+    {
+      label: "Right-Leaning",
+      value: results?.results?.political?.[2]?.score || 0,
+      highMessage: "Conservative language and framing detected.",
+      lowMessage: "Low presence of conservative framing detected.",
+      colors: { bgFrom: "from-pink-50", bgTo: "to-pink-100", border: "border-pink-200", title: "text-pink-900", value: "text-pink-700", para: "text-pink-800" }
+    }
   ];
 
   const sortedPoliticalData = [...politicalData].sort((a, b) => b.value - a.value);
@@ -176,8 +178,8 @@ export default function Main() {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${activeTab === tab.id
-                  ? "text-stone-800 shadow-lg"
-                  : "text-stone-700 hover:bg-stone-700/20"
+                ? "text-stone-800 shadow-lg"
+                : "text-stone-700 hover:bg-stone-700/20"
                 }`}
               style={activeTab === tab.id ? { backgroundColor: "#b8c9a8" } : {}}
             >
@@ -199,12 +201,23 @@ export default function Main() {
       <div className="flex-1 p-8 overflow-y-auto">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
-            <h2 className="text-3xl font-bold text-stone-800 mb-2">
-              {tabs.find((t) => t.id === activeTab)?.label}
-            </h2>
-            <p className="text-stone-600">Real-time bias detection and analysis</p>
+          <div className="mb-8 flex items-center justify-between">
+            <div>
+              <h2 className="text-3xl font-bold text-stone-800 mb-2">
+                {tabs.find((t) => t.id === activeTab)?.label}
+              </h2>
+              <p className="text-stone-600">Real-time bias detection and analysis</p>
+            </div>
+
+            {/* Back Button */}
+            <button
+              onClick={() => navigate("/analyze")}
+              className="px-4 py-2 rounded-xl shadow-md bg-stone-700 text-white hover:bg-stone-800 transition"
+            >
+              ← Back
+            </button>
           </div>
+
 
           {/* Original Text Display */}
           {entry && (
@@ -532,14 +545,22 @@ export default function Main() {
                 </div>
               )}
 
-              <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-stone-200">
+              <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-stone-200 relative">
+
+                {/* --- BETA Badge --- */}
+                <span className="absolute top-4 right-4 bg-yellow-300 text-yellow-900 text-xs font-semibold px-2 py-1 rounded-md shadow-sm">
+                  BETA
+                </span>
+
                 <h3 className="text-xl font-semibold text-stone-800 mb-4">Analysis Summary</h3>
-                <p className="text-stone-600 leading-relaxed">
-                  This content demonstrates a balanced approach with a slight positive sentiment (45%) and
-                  maintains political neutrality with the majority of content (44%) classified as center-positioned.
-                  The analysis is based on NLP models trained on neutral datasets to ensure objective evaluation.
+
+                <p className="text-stone-600 leading-relaxed mb-6">
+                  {results?.results?.summary
+                    ? results.results.summary
+                    : "Summary unavailable. Please run an analysis to generate an overview."}
                 </p>
               </div>
+
             </div>
           )}
         </div>

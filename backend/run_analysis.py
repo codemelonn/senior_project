@@ -230,57 +230,83 @@ def run_summarization_model(text: str, sensitivity: str):
     
     return summary_results
 
+
 def run_flan_summarization_model(text: str, results: dict):
     """
-    Dynamically summarizes whichever analyses are present.
-    FLAN-T5 works best with >25 words, so short inputs skip summarization.
+    Summarizes the text using FLAN with stable, structured prompting.
     """
 
-    # Setting the minimum word count for summarization, else it'll just repeat the text or give useless output.
     min_words = 25
-    word_count = len(text.split())
-
-    if word_count < min_words:
+    if len(text.split()) < min_words:
         return f"(Summary skipped: text too short — needs at least {min_words} words.)"
 
-    # Build the prompt with available analyses
-    sections = [f"Text:\n{text}\n"]
+    # ---------------------------
+    # Human-readable interpretations
+    # ---------------------------
+    sections = [f"TEXT CONTENT:\n{text}\n"]
 
+    # Sentiment
     if "sentiment" in results:
-        sections.append(f"Sentiment Analysis:\n{results['sentiment']}\n")
+        s = results["sentiment"]["top"]["label"]
+        sections.append(f"SENTIMENT RESULT: The dominant emotion detected is **{s}**.")
 
+    # Political
     if "political" in results:
-        sections.append(f"Political Bias Analysis:\n{results['political']}\n")
+        top_pol = max(results["political"], key=lambda x: x["score"])
+        sections.append(
+            f"POLITICAL RESULT: The text's language most closely aligns with **{top_pol['label']}**."
+        )
 
+    # Toxicity
     if "toxicity" in results:
-        sections.append(f"Toxicity Analysis:\n{results['toxicity']}\n")
+        tox_dict = results["toxicity"]
+        top_label, top_score = max(tox_dict.items(), key=lambda x: x[1])
+        if top_score < 0.01:
+            sections.append("TOXICITY RESULT: The text shows **no meaningful toxicity**.")
+        else:
+            sections.append(
+                f"TOXICITY RESULT: The text contains signs of **{top_label.lower()}**."
+            )
 
-    # If somehow nothing is selected:
     if len(sections) == 1:
         return "(No analyses selected, so no summary generated.)"
 
-    # The instruction for FLAN-T5 to generate a concise summary based on the analyses.
-    # Right now, it's pretty basic and will require better prompting to get more useful summaries.
-    # Currently, it doesn't give back a summary it is just returning the numbers given from the analyses.
-    # TODO: Improve the prompt to get more meaningful summaries.
+    # ---------------------------
+    # Strong, highly structured prompt
+    # ---------------------------
     instruction = """
-        Task:
-        Provide a clear, concise explanation of how the available analyses relate to the meaning, tone, and themes of the text.
-        Do NOT repeat numerical scores.
-        Explain the relationships between sentiment, political leaning, and toxicity (if present).
-        """
+TASK:
+You are given:
+1. The original text
+2. Human-readable summaries of sentiment, political leaning, and toxicity
 
-    prompt = "\n".join(sections) + instruction
+Write a short, objective interpretation with the following structure:
+
+OUTPUT FORMAT (VERY IMPORTANT):
+1. **Overall Tone:** One sentence describing the emotional tone.
+2. **Political Context:** One sentence describing any political leaning.
+3. **Toxicity Level:** One sentence describing whether the text contains harmful language.
+4. **Combined Interpretation:** One or two sentences summarizing how these analyses explain the text's purpose or character.
+
+RULES:
+- Do NOT repeat the original text.
+- Do NOT repeat any sentence multiple times.
+- Do NOT invent emotions or politics not implied by the results.
+- Do NOT output lists of adjectives.
+- Keep the answer factual and neutral.
+"""
+
+    prompt = "\n".join(sections) + "\n" + instruction
 
     print("FLAN prompt:\n", prompt)
 
-    # ---- Run FLAN-T5 ----
     try:
         summary = summarizer(prompt)[0]["generated_text"]
         return summary
     except Exception as e:
         print("FLAN summarization error:", e)
         return "(Summarization model error — unable to generate summary.)"
+
 
 
 
@@ -391,39 +417,41 @@ def main():
     """
 
     # Handle CLI input (file or manual)
-    if len(sys.argv) > 1:
-        file_path = sys.argv[1]
-        if os.path.exists(file_path):
-            with open(file_path, "r", encoding="utf-8") as f:
-                text = f.read()
-        else:
-            print(f"❌ File not found: {file_path}")
-            sys.exit(1)
-    else:
-        print("Enter text to analyze (press Enter when done):\n")
-        text = input("> ")
+    # if len(sys.argv) > 1:
+    #     file_path = sys.argv[1]
+    #     if os.path.exists(file_path):
+    #         with open(file_path, "r", encoding="utf-8") as f:
+    #             text = f.read()
+    #     else:
+    #         print(f"❌ File not found: {file_path}")
+    #         sys.exit(1)
+    # else:
+    #     print("Enter text to analyze (press Enter when done):\n")
+    #     text = input("> ")
 
-    print("\n🔍 Running analysis...\n")
-    result = analyze_text(text)
+    # print("\n🔍 Running analysis...\n")
+    # result = analyze_text(text)
 
-    # ======================
-    #  Display Results
-    # ======================
-    print("🧠 Primary Emotion:", result["emotion"]["label"])
-    print(f"   Confidence: {result['emotion']['score']:.3f}")
+    # # ======================
+    # #  Display Results
+    # # ======================
+    # print("🧠 Primary Emotion:", result["emotion"]["label"])
+    # print(f"   Confidence: {result['emotion']['score']:.3f}")
 
-    print("\n📰 Summary:")
-    print(result["summary"])
+    # print("\n📰 Summary:")
+    # print(result["summary"])
 
-    print("\n🏛️ Political Bias Scores:")
-    if result["political_bias"]:
-        for k, v in result["political_bias"].items():
-            print(f"  - {k}: {v:.3f}")
-    else:
-        print("  (No bias detected or model error.)")
+    # print("\n🏛️ Political Bias Scores:")
+    # if result["political_bias"]:
+    #     for k, v in result["political_bias"].items():
+    #         print(f"  - {k}: {v:.3f}")
+    # else:
+    #     print("  (No bias detected or model error.)")
 
-    print("\n☣️ Toxicity Score:")
-    print(result["toxicity"])
+    # print("\n☣️ Toxicity Score:")
+    # print(result["toxicity"])
+
+    
 
 if __name__ == "__main__":
     main()

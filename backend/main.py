@@ -83,9 +83,14 @@ async def analyze_text_endpoint(request: Request):
         if selected.get("toxicity"):
             results["toxicity"] = run_toxicity_model(text, sensitivity)
 
-        summarization = run_flan_summarization_model(text, results)
-        if summarization:
-            print("Summarization result:", summarization)
+        # Printing results and the type for debugging
+        min_words = 25
+        if len(text.split()) < min_words:
+            results["summary"] = f"Summary skipped: text too short — needs at least {min_words} words."
+        else:
+            results["summary"] = run_flan_summarization_model(text, results)
+        if results.get("summary"):
+            print("Summarization result:", results["summary"])  
         
         return {"results": results, "sensitivity": sensitivity}
 
