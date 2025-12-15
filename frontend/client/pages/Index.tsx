@@ -22,7 +22,7 @@ export default function Index() {
   const [error, setError] = useState<string | null>(null);
   const [fileUploading, setFileUploading] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
-
+  const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [selectedBiases, setSelectedBiases] = useState<
@@ -118,6 +118,7 @@ export default function Index() {
     }
 
     setError(null);
+    setLoading(true);   // <-- start loading
 
     const payload = {
       entry: trimmed,
@@ -127,7 +128,7 @@ export default function Index() {
 
     try {
       const response = await fetch("http://localhost:8000/api/analyze", {
-        method: "POST",
+        method: 'POST',
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
@@ -135,13 +136,15 @@ export default function Index() {
       if (!response.ok) throw new Error("Server Error");
 
       const results = await response.json();
-
       navigate("/main", { state: { results, entry: trimmed } });
+
     } catch (error) {
-      setError("Error analyzing content. Please try again.");
-      console.error("Analysis error:", error);
+      setError("An error occurred while processing your request. Please try again.");
+      console.error("Error during analysis:", error);
+      setLoading(false); // <-- stop loading on error
     }
   };
+
 
   return (
     <AppLayout
@@ -176,7 +179,7 @@ export default function Index() {
             {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> */}
             <div className="grid grid-cols-1 gap-6">
 
-              
+
               {/* Bias Types */}
               <div className="rounded-2xl border-2 border-stone-200 p-5 min-h-[360px]">
                 <h3 className="text-lg font-semibold text-stone-800 mb-3">
@@ -337,11 +340,35 @@ export default function Index() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={!entry.trim() || fileUploading}
-              className="mt-6 w-full rounded-xl bg-emerald-500 py-3 text-base font-semibold text-white shadow-md hover:bg-emerald-600 transition disabled:opacity-50"
+              disabled={!entry.trim() || loading}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-6 py-3 text-base font-semibold text-white shadow-md transition-transform duration-200 hover:-translate-y-0.5 hover:bg-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Analyze Content
+              {loading ? (
+                <svg
+                  className="animate-spin h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                  ></path>
+                </svg>
+              ) : (
+                "Analyze Content"
+              )}
             </button>
+
 
             {error && (
               <p className="text-sm text-red-600 mt-3 flex items-center gap-2">

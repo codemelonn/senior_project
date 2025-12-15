@@ -1,114 +1,166 @@
-    # 🧠 Bias Checker — Full Stack Project
+# 🧠 Bias Checker — Full Stack Project
 
-    This repository contains both the **Frontend (React + Fusion Starter)** and **Backend (FastAPI)** components of the Bias Checker project.  
-    The goal of this project is to analyze media text for bias, sentiment, and tone, providing users with a clear and visual understanding of potential bias patterns.
+Bias Checker is a full-stack application designed to analyze media text for sentiment, bias, and tone. The system provides both raw analysis results and AI-assisted summaries to help users better understand potential bias patterns in written content.
 
-    ---
+This repository contains:
 
-    ## ⚠️ Active Branch Notice
+* A **React-based frontend** for user interaction and visualization
+* A **FastAPI backend** that performs NLP analysis using multiple models
+* **Auto-generated backend documentation** built with Sphinx
 
-    > **Main Development Branch:** `wip_frontend`  
-    > This is the **working branch** where the frontend and backend integration currently functions correctly.  
-    > The `main` branch is used primarily for documentation and stable releases.
+---
 
-    To move into the branch, do this command:
-        git checkout origin/wip_frontend
-    ---
+## 🖥️ Frontend — React (Fusion Starter)
 
-    ## 🚀 Frontend — Fusion Starter Setup (Flare/Fusion)
+The frontend is built using the **Fusion Starter** React template and provides an interactive dashboard for submitting text, selecting analysis types, and viewing results through charts and summaries.
 
-    This project uses the **Fusion Starter full-stack React + Express template** as the base for the Bias Checker frontend.
+### Setup
 
-    ### 🧩 Setup Steps
+#### 1. Install Node.js and PNPM
 
-    #### 1️⃣ Install PNPM
-    You may possibly download Node.js onto your machine and put that into your system path, then you should be able to run all
-    the commands you find below.
+Ensure Node.js is installed and available in your system PATH, then install PNPM:
 
-    ```bash
-    npm i -g pnpm
+```bash
+npm install -g pnpm
+```
 
-    2️⃣ Install Dependencies
-    pnpm install
+#### 2. Install Dependencies
 
-    If you get a warning like this:
-    Ignored build scripts: @swc/core, esbuild.
+From the frontend directory:
 
-    Run "pnpm approve-builds" to pick which dependencies should be allowed to run scripts.
+```bash
+pnpm install
+```
 
-    Run:
-    pnpm approve-builds @swc/core esbuild
+If you receive a warning about ignored build scripts such as:
 
+```
+Ignored build scripts: @swc/core, esbuild
+```
 
-     If it shows “No items selected,” that’s fine — you can still continue.
+Approve them with:
 
-    💻 Run the Project
-    Option A – Default Port (8080)
-    pnpm dev
+```bash
+pnpm approve-builds @swc/core esbuild
+```
 
-    Option B – Custom Port (e.g. 5174)
-    If another service is using 8080, change ports:
-    pnpm dev -- --port 5174 --host
+If no items are listed, you may safely continue.
 
-    Then open the output link (usually):
+#### 3. Run the Frontend
 
-    Local: http://localhost:8080/
-    Network: http://192.168.x.xxx:8080/
+```bash
+pnpm dev
+```
 
-    or if you changed it:
-    http://localhost:5174/
+By default, the frontend runs on port **8080**.
 
-    ⚙️ Backend — FastAPI Server Setup
+To specify a custom port (e.g., if 8080 is in use):
 
-    The backend handles text analysis, model interaction, and API routing.
+```bash
+pnpm dev -- --port 5174 --host
+```
 
-    📦 Installation
-    From the backend/ directory:
+Access the application at:
 
-    pip install -r requirements.txt
-    This installs all required dependencies.
+* [http://localhost:8080](http://localhost:8080)
+* or [http://localhost:5174](http://localhost:5174) (if changed)
 
-    ▶️ Run the Python Server
+---
 
-    While in the backend directory:
+## ⚙️ Backend — FastAPI Server
 
-    uvicorn main:app --reload
+The backend handles text processing, model inference, summarization, and API routing. It exposes REST endpoints that the frontend consumes.
 
-    Or, from the project root:
+### Installation
 
-    uvicorn backend.main:app --reload
-    (This to is run the backend while you're in the root directory.)
+From the `backend/` directory:
 
-    The backend typically runs on port 8000.
+```bash
+pip install -r requirements.txt
+```
 
-    You’ll see this printed in the terminal when you start the server.
+This installs all required backend dependencies.
 
-    🔗 Connecting Frontend to Backend
-    Make sure your frontend fetch requests point to the backend’s active port (default: 8000). 
+### Running the Server
 
-    Example:
-    fetch("http://127.0.0.1:8000/api/analyze")
+From the backend directory:
 
-    Your frontend will make API calls to this endpoint with appropriate parameters (method, headers, body, etc.).
+```bash
+uvicorn main:app --reload
+```
 
-    ⚠️ Important Note — __pycache__
-    When you run the backend, Python will automatically generate a __pycache__/ folder.
-    Do NOT commit or push this directory.
+Or from the project root:
 
-    Example:
+```bash
+uvicorn backend.main:app --reload
+```
 
-    main.cpython-312.pyc
+The backend runs on **[http://127.0.0.1:8000](http://127.0.0.1:8000)** by default.
 
-    This varies by your Python version (e.g., 3.12). Always delete or ignore these before pushing.
+---
 
-    ![Example of Full Analysis](./assets/demo_gif.gif)
+## 🔗 Frontend–Backend Communication
 
-    🧾 Summary
+The frontend communicates with the backend through REST API calls.
 
-        - **Frontend:** Built with React (Fusion Starter).  
-        Start using `pnpm dev` — defaults to port **8080** (or a custom port if specified).
+Example API endpoint:
 
-        - **Backend:** Built with FastAPI (Python).  
-        Start using `uvicorn main:app --reload` — defaults to port **8000**.
+```javascript
+fetch("http://127.0.0.1:8000/api/analyze")
+```
 
-        - **Active Branch:** `wip_frontend_dashboard` — this branch contains the latest working full-stack integration.
+Ensure the frontend is configured to point to the correct backend port if you change the default.
+
+---
+
+## 📘 Backend API Documentation
+
+The backend is fully documented using **Sphinx autodoc**, which generates HTML documentation directly from Python docstrings in the source code.
+
+### Viewing the Documentation Locally
+
+After generating the documentation with Sphinx, open the following file in a web browser:
+
+```
+docs/_build/html/index.html
+```
+
+The documentation includes:
+
+* Backend modules and functions
+* API endpoint descriptions
+* NLP model execution logic
+* Parameter and return-value details
+
+This documentation is intended to support future maintenance, extension, or handoff of the project.
+
+---
+
+## ⚠️ Notes on Generated Files
+
+When running the backend, Python automatically generates a `__pycache__/` directory containing compiled bytecode files.
+
+Example:
+
+```
+main.cpython-312.pyc
+```
+
+These files should **not** be committed to version control. Ensure they are ignored or removed before pushing changes.
+
+---
+
+## 🧾 Summary
+
+* **Frontend:** React (Fusion Starter)
+  Start with `pnpm dev` (default port: **8080**)
+
+* **Backend:** FastAPI (Python)
+  Start with `uvicorn backend.main:app --reload` (default port: **8000**)
+
+* **Documentation:**
+  Auto-generated using Sphinx and located in `docs/_build/html/`
+
+---
+
+![Example of Full Analysis](./assets/demo_gif.gif)

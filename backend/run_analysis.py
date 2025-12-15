@@ -1,22 +1,25 @@
 """
-run_analysis.py
----------------
-Standalone version of the Bias Checker NLP pipeline models. 
+Core NLP analysis module for the Bias Checker system.
 
-This script performs three major analyses on user-provided text input:
-    1. Emotion classification using BERT-based emotion detection.
-    2. Secondary emotion classification using a workshop model.
-    3. Text summarization using a pretrained BART summarizer.
+This module defines and manages all machine learning models used
+by the application, including:
 
-It supports both manual text input and file-based input from the command line.
+- Emotion / sentiment classification
+- Political bias detection
+- Toxicity detection
+- Structured AI-assisted summarization
 
-Usage:
-    $ python run_analysis.py                # prompts user for text input
-    $ python run_analysis.py myfile.txt     # analyzes text from a file
+Models are loaded once and reused across requests to ensure
+efficient inference in both API and CLI contexts.
 
-Author:
-    Dominik T. — NLP logic implementation
-    Amara B.   — CLI interface and execution flow
+Design Goals:
+- Imported by FastAPI (main.py)
+- Extendable for future NLP models
+- Usable independently for experimentation or testing
+
+Authors:
+- Dominik T. — NLP model development, inference logic
+- Amara B.   — CLI interface and execution flow
 """
 
 from transformers import (
@@ -44,7 +47,21 @@ flan_summarizer = None
 
 def load_models():
     """
-    Initialize all NLP models once (called during startup).
+    Load and initialize all NLP models used by the application.
+
+    This function must be called once before any analysis functions
+    are used. It initializes multiple transformer pipelines and
+    third-party models and assigns them to global variables.
+
+    Loaded Models:
+        - Emotion classifier (BERT-based)
+        - Political bias classifier (DeBERTa-based)
+        - Toxicity classifier (Detoxify)
+        - FLAN-T5 text generation model for summarization
+
+    Side Effects:
+        - Populates global model variables
+        - Uses significant memory and startup time
     """
 
     global emotion_classifier, summarizer, bias_model, bias_tokenizer, toxicity_model, larger_political_model, flan_summarizer
@@ -91,23 +108,31 @@ def load_models():
 
     print(" ==== Models loaded successfully! ==== \n")
     
-""" 
 # ===============================================
 #   INDIVIDUAL MODEL FUNCTIONS   |   Author: Dominik T.
-
-Here is where we will have each individual model function defined so that when called from the frontend we can have separate outputs.
+#
+# Each individual NLP model function is defined below.
+# These functions are called independently depending
+# on which analyses are selected by the frontend.
 # ===============================================
-"""
 
 def run_sentiment_model(text: str, sensitivity: str):
     """
-    Run sentiment analysis model on the input text.
+    Perform emotion-based sentiment analysis on input text.
+
+    Uses a BERT-based emotion classifier to compute a full probability
+    distribution across emotion labels and identifies the dominant emotion.
 
     Args:
-        text (str): The input text to analyze.
+        text (str): Input text to analyze.
+        sensitivity (str): Reserved for future tuning (currently unused).
 
     Returns:
-        dict: A dictionary with sentiment labels and their corresponding scores.
+        dict: Dictionary containing:
+            - top (dict): Highest-scoring emotion label and score
+            - all_scores (list[dict]): Full emotion score distribution
+
+        Returns None if the model is unavailable or an error occurs.
     """
     try:
             if emotion_classifier is None:
@@ -137,17 +162,22 @@ def run_sentiment_model(text: str, sensitivity: str):
         print(f"Emotion model error: {e}")
         return None
 
-# This model is no good, but we can keep it here for now until we swap it out for the larger one.
+
 def run_political_model(text: str, sensitivity: str):
     """
-    Run political bias model on the input text.
+    Analyze political leaning of the input text.
+
+    Uses a transformer-based political bias classifier to estimate
+    alignment across Left, Center, and Right categories.
 
     Args:
-        text (str): The input text to analyze.
+        text (str): Input text to analyze.
+        sensitivity (str): Reserved for future tuning (currently unused).
 
     Returns:
-        dict: A dictionary with political bias labels and their corresponding scores.
-    """  
+        list[dict]: List of political labels with confidence scores,
+                    or None if analysis fails.
+    """
     try:
         if larger_political_model is None:
             raise RuntimeError("Political model not loaded")
@@ -181,9 +211,18 @@ def run_political_model(text: str, sensitivity: str):
 # Toxicity model function here but might split this into different categories for different toxicity types (e.g. toxicity, severe toxicity, identity attack, etc.)
 def run_toxicity_model(text: str, sensitivity: str):
     """
-    Run toxicity model on the input text using Detoxify.
-    Converts numpy.float32 values to native Python floats.
-    Formats label names (e.g., "identity_attack" → "Identity Attack").
+    Detect toxic or harmful language in the input text.
+
+    Uses the Detoxify model to score multiple toxicity-related categories.
+    Output keys are formatted for frontend readability.
+
+    Args:
+        text (str): Input text to analyze.
+        sensitivity (str): Reserved for future tuning (currently unused).
+
+    Returns:
+        dict: Mapping of formatted toxicity labels to float scores.
+              Includes error information if analysis fails.
     """
     try:
         if not isinstance(text, str):
@@ -233,7 +272,23 @@ def run_summarization_model(text: str, sensitivity: str):
 
 def run_flan_summarization_model(text: str, results: dict):
     """
-    Summarizes the text using FLAN with stable, structured prompting.
+    Generate a structured, human-readable interpretation of analysis results.
+
+    This function uses a FLAN-T5 model with a carefully engineered prompt that combines:
+        - Original text
+        - Sentiment results
+        - Political bias results
+        - Toxicity findings
+
+    The model produces a concise, neutral interpretation intended
+    for end-user consumption.
+
+    Args:
+        text (str): Original input text.
+        results (dict): Dictionary containing outputs from prior analyses.
+
+    Returns:
+        str: Structured summary explaining the combined analysis results.
     """
 
     min_words = 25
@@ -243,7 +298,7 @@ def run_flan_summarization_model(text: str, results: dict):
     # ---------------------------
     # Human-readable interpretations
     # ---------------------------
-    sections = [f"TEXT CONTENT:\n{text}\n"]
+    sections = ["TEXT CONTENT:\n{}\n".format(text)]
 
     # Sentiment
     if "sentiment" in results:
@@ -272,29 +327,27 @@ def run_flan_summarization_model(text: str, results: dict):
         return "(No analyses selected, so no summary generated.)"
 
     # ---------------------------
-    # Strong, highly structured prompt
+    # These instructions had to be changed to multiple lines for sphinx compatibility.
     # ---------------------------
-    instruction = """
-TASK:
-You are given:
-1. The original text
-2. Human-readable summaries of sentiment, political leaning, and toxicity
+    instruction = (
+        "TASK:\n"
+        "You are given:\n"
+        "1. The original text\n"
+        "2. Human-readable summaries of sentiment, political leaning, and toxicity\n\n"
+        "Write a short, objective interpretation with the following structure:\n\n"
+        "OUTPUT FORMAT (VERY IMPORTANT):\n"
+        "1. **Overall Tone:** One sentence describing the emotional tone.\n"
+        "2. **Political Context:** One sentence describing any political leaning.\n"
+        "3. **Toxicity Level:** One sentence describing whether the text contains harmful language.\n"
+        "4. **Combined Interpretation:** One or two sentences summarizing how these analyses explain the text's purpose or character.\n\n"
+        "RULES:\n"
+        "- Do NOT repeat the original text.\n"
+        "- Do NOT repeat any sentence multiple times.\n"
+        "- Do NOT invent emotions or politics not implied by the results.\n"
+        "- Do NOT output lists of adjectives.\n"
+        "- Keep the answer factual and neutral."
+    )
 
-Write a short, objective interpretation with the following structure:
-
-OUTPUT FORMAT (VERY IMPORTANT):
-1. **Overall Tone:** One sentence describing the emotional tone.
-2. **Political Context:** One sentence describing any political leaning.
-3. **Toxicity Level:** One sentence describing whether the text contains harmful language.
-4. **Combined Interpretation:** One or two sentences summarizing how these analyses explain the text's purpose or character.
-
-RULES:
-- Do NOT repeat the original text.
-- Do NOT repeat any sentence multiple times.
-- Do NOT invent emotions or politics not implied by the results.
-- Do NOT output lists of adjectives.
-- Keep the answer factual and neutral.
-"""
 
     prompt = "\n".join(sections) + "\n" + instruction
 
@@ -313,36 +366,24 @@ RULES:
 # ===============================================
 #   ANALYSIS FUNCTION   |    Authors: Dominik T.
 # ===============================================
-def analyze_text(text: str): 
-
+def analyze_text(text: str):
     """
-    Run full NLP analysis (emotion, workshop classification, and summarization).
+    Run the full NLP analysis pipeline on the given text.
 
-    This function applies multiple transformer pipelines to analyze the
-    emotional content and generate a short summary of the input text.
+    This function executes emotion detection, summarization,
+    political bias estimation, and toxicity analysis sequentially.
 
     Args:
-        text (str): The input text to analyze.
+        text (str): Input text to analyze.
 
     Returns:
-        dict: A dictionary containing:
-            - best_emotion (dict): Highest-scoring emotion from the primary model.
-            - best_workshop (dict): Highest-scoring emotion from the secondary model.
-            - all_emotion_scores (list[dict]): Full list of scores from primary model.
-            - all_workshop_scores (list[dict]): Full list of scores from secondary model.
-            - summary (str): Concise summary of the input text.
-            - reason (str): Simple reasoning or detected emotional keywords.
+        dict: Dictionary containing emotion, summary, political bias,
+              and toxicity results.
 
-    Example:
-        >>> analyze_text("I love my job, but it's stressful at times.")
-        {
-            'best_emotion': {'label': 'joy', 'score': 0.89},
-            'summary': 'The person enjoys their job but finds it stressful.',
-            ...
-        }
+    Note:
+        This function is primarily retained for legacy or CLI use.
+        The API uses more granular analysis functions instead.
     """
-
-    """Runs all models on the given text."""
 
     # ---- Emotion ----
     emotion_output = emotion_classifier(text)[0]
@@ -401,19 +442,17 @@ def analyze_text(text: str):
 # ==============================================
 def main():
     """
-    Command-line interface for running the Bias Checker pipeline.
+    Command-line interface entry point for the Bias Checker system.
 
-    This function handles:
-        • Reading text either from a specified file or direct user input.
-        • Executing the analysis pipeline via `analyze_text()`.
-        • Printing formatted results to the terminal.
+    Allows developers to run NLP analysis directly from the terminal
+    for testing or debugging purposes.
 
-    Usage:
-        $ python run_analysis.py mytext.txt
+    Intended Usage:
         $ python run_analysis.py
 
-    Exits:
-        SystemExit: If the provided file path is invalid.
+    Note:
+        CLI execution is currently disabled/commented out, as the
+        primary usage is via the FastAPI backend.
     """
 
     # Handle CLI input (file or manual)

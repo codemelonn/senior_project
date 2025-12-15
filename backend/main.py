@@ -1,3 +1,31 @@
+"""
+main.py
+-------
+FastAPI backend for the Bias Checker NLP system.
+
+This module exposes REST API endpoints for analyzing user-provided text
+using multiple NLP models, including sentiment/emotion detection,
+political bias classification, toxicity detection, and AI-assisted
+summarization.
+
+The server loads all required machine learning models once at startup
+to minimize per-request latency.
+
+Primary Responsibilities:
+- API routing and request validation
+- Coordinating NLP model execution
+- File upload handling (.txt and .pdf)
+- Returning structured JSON results for frontend visualization
+
+Intended Usage:
+- Run as a FastAPI service (locally or deployed)
+- Accessed by a frontend web application
+
+Author(s):
+- Backend & API Integration: Dominik T., Amara B.
+"""
+
+
 from typing import Dict
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,7 +56,18 @@ app = FastAPI(
 
 @app.on_event("startup")
 async def startup_event():
-    """Load NLP models once when the server starts."""
+    """
+    FastAPI startup hook that loads all NLP models into memory.
+
+    This function ensures that heavyweight transformer models are loaded
+    exactly once when the server starts, rather than per request.
+    Model loading is executed in a background thread to avoid blocking
+    the event loop.
+
+    Side Effects:
+        - Initializes global model objects in `run_analysis.py`
+        - Increases initial startup time, but reduces request latency
+    """
     import asyncio
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, load_models)
@@ -56,14 +95,50 @@ class TextInput(BaseModel):
 
 @app.get("/")
 def home():
+    """
+    Health-check endpoint for the API.
+
+    Returns:
+        dict: A simple JSON message confirming that the API is running.
+    """
     return {"message": "Bias Checker API running. Use POST /api/analyze or /api/analyze-file."}
 
-""" 
-This function analyzes the input text using multiple NLP models and returns the results.
-"""
+
 @app.post("/api/analyze")
 async def analyze_text_endpoint(request: Request):
-    """Receives JSON: {"entry": "...", "sensitivity": "...", "selectedBiases": {...}} and returns model results."""
+    """
+    Analyze raw text input using selected NLP models.
+
+    The request body must contain JSON specifying:
+        - The input text
+        - Which analyses to perform (sentiment, political bias, toxicity)
+        - An optional sensitivity setting (currently unused but reserved)
+
+    Request JSON Format::
+
+        {
+            "entry": "Text to analyze",
+            "sensitivity": "low|medium|high",
+            "selected": {
+                "sentiment": true,
+                "political": true,
+                "toxicity": false
+            }
+        }
+
+    Behavior:
+        - Only runs models explicitly selected by the user
+        - Skips summarization for very short text inputs
+        - Uses FLAN-based summarization to interpret combined results
+
+    Returns:
+        dict: JSON object containing:
+            - results (dict): Outputs of each selected analysis
+            - sensitivity (str): Echoed sensitivity setting
+
+    Raises:
+        HTTPException(500): If an unexpected server-side error occurs
+    """
     try:
         data = await request.json()
         print("Received data:", data)
@@ -101,8 +176,30 @@ async def analyze_text_endpoint(request: Request):
 @app.post("/api/analyze-file")
 async def analyze_file(file: UploadFile = File(...)):
     """
-    Accepts .txt or .pdf, extracts text, and returns ONLY the text.
-    No analysis is performed here now.
+    Extract text content from an uploaded file.
+
+    Supported file types:
+        - Plain text (.txt)
+        - PDF documents (.pdf)
+
+    This endpoint performs **text extraction only** and does not
+    run any NLP analysis. It is intended to be used as a preprocessing
+    step before submitting extracted text to `/api/analyze`.
+
+    Constraints:
+        - Maximum file size: 2 MB
+        - Empty files are rejected
+
+    Args:
+        file (UploadFile): Uploaded file from the client.
+
+    Returns:
+        dict: JSON object containing extracted text.
+
+    Raises:
+        HTTPException(400): Empty file or PDF extraction failure
+        HTTPException(413): File exceeds size limit
+        HTTPException(415): Unsupported file type
     """
 
     if file.content_type not in ("text/plain", "application/pdf"):
