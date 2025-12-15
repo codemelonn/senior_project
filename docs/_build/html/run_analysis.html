@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="./">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>run_analysis module &#8212; TryCatch(Bias)  documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css?v=27fed22d" />
+    <script src="_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="main module" href="main.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-run_analysis">
+<span id="run-analysis-module"></span><h1>run_analysis module<a class="headerlink" href="#module-run_analysis" title="Link to this heading">¶</a></h1>
+<p>Core NLP analysis module for the Bias Checker system.</p>
+<p>This module defines and manages all machine learning models used
+by the application, including:</p>
+<ul class="simple">
+<li><p>Emotion / sentiment classification</p></li>
+<li><p>Political bias detection</p></li>
+<li><p>Toxicity detection</p></li>
+<li><p>Structured AI-assisted summarization</p></li>
+</ul>
+<p>Models are loaded once and reused across requests to ensure
+efficient inference in both API and CLI contexts.</p>
+<p>Design Goals:
+- Imported by FastAPI (main.py)
+- Extendable for future NLP models
+- Usable independently for experimentation or testing</p>
+<p>Authors:
+- Dominik T. — NLP model development, inference logic
+- Amara B.   — CLI interface and execution flow</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="run_analysis.analyze_text">
+<span class="sig-prename descclassname"><span class="pre">run_analysis.</span></span><span class="sig-name descname"><span class="pre">analyze_text</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/run_analysis.html#analyze_text"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#run_analysis.analyze_text" title="Link to this definition">¶</a></dt>
+<dd><p>Run the full NLP analysis pipeline on the given text.</p>
+<p>This function executes emotion detection, summarization,
+political bias estimation, and toxicity analysis sequentially.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>text</strong> (<em>str</em>) – Input text to analyze.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Dictionary containing emotion, summary, political bias,</dt><dd><p>and toxicity results.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This function is primarily retained for legacy or CLI use.
+The API uses more granular analysis functions instead.</p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="run_analysis.load_models">
+<span class="sig-prename descclassname"><span class="pre">run_analysis.</span></span><span class="sig-name descname"><span class="pre">load_models</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/run_analysis.html#load_models"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#run_analysis.load_models" title="Link to this definition">¶</a></dt>
+<dd><p>Load and initialize all NLP models used by the application.</p>
+<p>This function must be called once before any analysis functions
+are used. It initializes multiple transformer pipelines and
+third-party models and assigns them to global variables.</p>
+<dl class="simple">
+<dt>Loaded Models:</dt><dd><ul class="simple">
+<li><p>Emotion classifier (BERT-based)</p></li>
+<li><p>Political bias classifier (DeBERTa-based)</p></li>
+<li><p>Toxicity classifier (Detoxify)</p></li>
+<li><p>FLAN-T5 text generation model for summarization</p></li>
+</ul>
+</dd>
+<dt>Side Effects:</dt><dd><ul class="simple">
+<li><p>Populates global model variables</p></li>
+<li><p>Uses significant memory and startup time</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="run_analysis.main">
+<span class="sig-prename descclassname"><span class="pre">run_analysis.</span></span><span class="sig-name descname"><span class="pre">main</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/run_analysis.html#main"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#run_analysis.main" title="Link to this definition">¶</a></dt>
+<dd><p>Command-line interface entry point for the Bias Checker system.</p>
+<p>Allows developers to run NLP analysis directly from the terminal
+for testing or debugging purposes.</p>
+<dl class="simple">
+<dt>Intended Usage:</dt><dd><p>$ python run_analysis.py</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>CLI execution is currently disabled/commented out, as the
+primary usage is via the FastAPI backend.</p>
+</div>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="run_analysis.run_flan_summarization_model">
+<span class="sig-prename descclassname"><span class="pre">run_analysis.</span></span><span class="sig-name descname"><span class="pre">run_flan_summarization_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">results</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/run_analysis.html#run_flan_summarization_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#run_analysis.run_flan_summarization_model" title="Link to this definition">¶</a></dt>
+<dd><p>Generate a structured, human-readable interpretation of analysis results.</p>
+<dl class="simple">
+<dt>This function uses a FLAN-T5 model with a carefully engineered prompt that combines:</dt><dd><ul class="simple">
+<li><p>Original text</p></li>
+<li><p>Sentiment results</p></li>
+<li><p>Political bias results</p></li>
+<li><p>Toxicity findings</p></li>
+</ul>
+</dd>
+</dl>
+<p>The model produces a concise, neutral interpretation intended
+for end-user consumption.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<em>str</em>) – Original input text.</p></li>
+<li><p><strong>results</strong> (<em>dict</em>) – Dictionary containing outputs from prior analyses.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Structured summary explaining the combined analysis results.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="run_analysis.run_political_model">
+<span class="sig-prename descclassname"><span class="pre">run_analysis.</span></span><span class="sig-name descname"><span class="pre">run_political_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensitivity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/run_analysis.html#run_political_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#run_analysis.run_political_model" title="Link to this definition">¶</a></dt>
+<dd><p>Analyze political leaning of the input text.</p>
+<p>Uses a transformer-based political bias classifier to estimate
+alignment across Left, Center, and Right categories.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<em>str</em>) – Input text to analyze.</p></li>
+<li><p><strong>sensitivity</strong> (<em>str</em>) – Reserved for future tuning (currently unused).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>List of political labels with confidence scores,</dt><dd><p>or None if analysis fails.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>list[dict]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="run_analysis.run_sentiment_model">
+<span class="sig-prename descclassname"><span class="pre">run_analysis.</span></span><span class="sig-name descname"><span class="pre">run_sentiment_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensitivity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/run_analysis.html#run_sentiment_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#run_analysis.run_sentiment_model" title="Link to this definition">¶</a></dt>
+<dd><p>Perform emotion-based sentiment analysis on input text.</p>
+<p>Uses a BERT-based emotion classifier to compute a full probability
+distribution across emotion labels and identifies the dominant emotion.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<em>str</em>) – Input text to analyze.</p></li>
+<li><p><strong>sensitivity</strong> (<em>str</em>) – Reserved for future tuning (currently unused).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Dictionary containing:</dt><dd><ul class="simple">
+<li><p>top (dict): Highest-scoring emotion label and score</p></li>
+<li><p>all_scores (list[dict]): Full emotion score distribution</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns None if the model is unavailable or an error occurs.</p>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="run_analysis.run_summarization_model">
+<span class="sig-prename descclassname"><span class="pre">run_analysis.</span></span><span class="sig-name descname"><span class="pre">run_summarization_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensitivity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/run_analysis.html#run_summarization_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#run_analysis.run_summarization_model" title="Link to this definition">¶</a></dt>
+<dd><p>Run summarization model on the input text.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>text</strong> (<em>str</em>) – The input text to analyze.</p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A concise summary of the input text.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="run_analysis.run_toxicity_model">
+<span class="sig-prename descclassname"><span class="pre">run_analysis.</span></span><span class="sig-name descname"><span class="pre">run_toxicity_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">text</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensitivity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/run_analysis.html#run_toxicity_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#run_analysis.run_toxicity_model" title="Link to this definition">¶</a></dt>
+<dd><p>Detect toxic or harmful language in the input text.</p>
+<p>Uses the Detoxify model to score multiple toxicity-related categories.
+Output keys are formatted for frontend readability.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>text</strong> (<em>str</em>) – Input text to analyze.</p></li>
+<li><p><strong>sensitivity</strong> (<em>str</em>) – Reserved for future tuning (currently unused).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>Mapping of formatted toxicity labels to float scores.</dt><dd><p>Includes error information if analysis fails.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">TryCatch(Bias)</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">backend</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="main.html">main module</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">run_analysis module</a></li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+  <li><a href="modules.html">backend</a><ul>
+      <li>Previous: <a href="main.html" title="previous chapter">main module</a></li>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2025, Dominik Trujillo, Pauline Rosales, Amara Barton.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.0.4</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+      |
+      <a href="_sources/run_analysis.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

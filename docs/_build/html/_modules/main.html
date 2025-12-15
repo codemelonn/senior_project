@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+
+<html lang="en" data-content_root="../">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>main &#8212; TryCatch(Bias)  documentation</title>
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=5ecbeea2" />
+    <link rel="stylesheet" type="text/css" href="../_static/basic.css?v=b08954a9" />
+    <link rel="stylesheet" type="text/css" href="../_static/alabaster.css?v=27fed22d" />
+    <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+    <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+    <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+   
+  <link rel="stylesheet" href="../_static/custom.css" type="text/css" />
+  
+
+  
+  
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for main</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">main.py</span>
+<span class="sd">-------</span>
+<span class="sd">FastAPI backend for the Bias Checker NLP system.</span>
+
+<span class="sd">This module exposes REST API endpoints for analyzing user-provided text</span>
+<span class="sd">using multiple NLP models, including sentiment/emotion detection,</span>
+<span class="sd">political bias classification, toxicity detection, and AI-assisted</span>
+<span class="sd">summarization.</span>
+
+<span class="sd">The server loads all required machine learning models once at startup</span>
+<span class="sd">to minimize per-request latency.</span>
+
+<span class="sd">Primary Responsibilities:</span>
+<span class="sd">- API routing and request validation</span>
+<span class="sd">- Coordinating NLP model execution</span>
+<span class="sd">- File upload handling (.txt and .pdf)</span>
+<span class="sd">- Returning structured JSON results for frontend visualization</span>
+
+<span class="sd">Intended Usage:</span>
+<span class="sd">- Run as a FastAPI service (locally or deployed)</span>
+<span class="sd">- Accessed by a frontend web application</span>
+
+<span class="sd">Author(s):</span>
+<span class="sd">- Backend &amp; API Integration: Dominik T., Amara B.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi</span><span class="w"> </span><span class="kn">import</span> <span class="n">FastAPI</span><span class="p">,</span> <span class="n">UploadFile</span><span class="p">,</span> <span class="n">File</span><span class="p">,</span> <span class="n">HTTPException</span><span class="p">,</span> <span class="n">Request</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.middleware.cors</span><span class="w"> </span><span class="kn">import</span> <span class="n">CORSMiddleware</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">run_analysis</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">analyze_text</span><span class="p">,</span>
+    <span class="n">load_models</span><span class="p">,</span> 
+    <span class="n">run_sentiment_model</span><span class="p">,</span> 
+    <span class="n">run_political_model</span><span class="p">,</span> 
+    <span class="n">run_toxicity_model</span><span class="p">,</span> 
+    <span class="n">run_flan_summarization_model</span>    
+<span class="p">)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span> 
+<span class="kn">import</span><span class="w"> </span><span class="nn">io</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">PyPDF2</span><span class="w"> </span><span class="kn">import</span> <span class="n">PdfReader</span>
+
+<span class="c1"># ---------------</span>
+<span class="c1">#   App Config</span>
+<span class="c1"># ---------------</span>
+
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">FastAPI</span><span class="p">(</span>
+    <span class="n">title</span> <span class="o">=</span> <span class="s2">&quot;Bias Checker NLP API&quot;</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Analyze text for emotion, summarization, political bias, and toxicity.&quot;</span><span class="p">,</span>
+    <span class="n">version</span> <span class="o">=</span> <span class="s2">&quot;2.0.0&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="startup_event">
+<a class="viewcode-back" href="../main.html#main.startup_event">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">on_event</span><span class="p">(</span><span class="s2">&quot;startup&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">startup_event</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    FastAPI startup hook that loads all NLP models into memory.</span>
+
+<span class="sd">    This function ensures that heavyweight transformer models are loaded</span>
+<span class="sd">    exactly once when the server starts, rather than per request.</span>
+<span class="sd">    Model loading is executed in a background thread to avoid blocking</span>
+<span class="sd">    the event loop.</span>
+
+<span class="sd">    Side Effects:</span>
+<span class="sd">        - Initializes global model objects in `run_analysis.py`</span>
+<span class="sd">        - Increases initial startup time, but reduces request latency</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+    <span class="n">loop</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">get_event_loop</span><span class="p">()</span>
+    <span class="k">await</span> <span class="n">loop</span><span class="o">.</span><span class="n">run_in_executor</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">load_models</span><span class="p">)</span></div>
+
+
+
+<span class="n">app</span><span class="o">.</span><span class="n">add_middleware</span><span class="p">(</span>
+    <span class="n">CORSMiddleware</span><span class="p">,</span>
+    <span class="n">allow_origins</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;*&quot;</span><span class="p">],</span>        <span class="c1"># TODO: restrict to front-end origin</span>
+    <span class="n">allow_methods</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;*&quot;</span><span class="p">],</span>
+    <span class="n">allow_headers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;*&quot;</span><span class="p">],</span>
+<span class="p">)</span>
+
+
+<span class="c1"># ----------------------</span>
+<span class="c1">#   Request the Schema </span>
+<span class="c1"># ----------------------</span>
+<div class="viewcode-block" id="TextInput">
+<a class="viewcode-back" href="../main.html#main.TextInput">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">TextInput</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span></div>
+
+    
+
+<span class="c1"># ------------</span>
+<span class="c1">#   Routes</span>
+<span class="c1"># ------------</span>
+
+
+<div class="viewcode-block" id="home">
+<a class="viewcode-back" href="../main.html#main.home">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">home</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Health-check endpoint for the API.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: A simple JSON message confirming that the API is running.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;message&quot;</span><span class="p">:</span> <span class="s2">&quot;Bias Checker API running. Use POST /api/analyze or /api/analyze-file.&quot;</span><span class="p">}</span></div>
+
+
+
+<div class="viewcode-block" id="analyze_text_endpoint">
+<a class="viewcode-back" href="../main.html#main.analyze_text_endpoint">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/api/analyze&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">analyze_text_endpoint</span><span class="p">(</span><span class="n">request</span><span class="p">:</span> <span class="n">Request</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Analyze raw text input using selected NLP models.</span>
+
+<span class="sd">    The request body must contain JSON specifying:</span>
+<span class="sd">        - The input text</span>
+<span class="sd">        - Which analyses to perform (sentiment, political bias, toxicity)</span>
+<span class="sd">        - An optional sensitivity setting (currently unused but reserved)</span>
+
+<span class="sd">    Request JSON Format::</span>
+
+<span class="sd">        {</span>
+<span class="sd">            &quot;entry&quot;: &quot;Text to analyze&quot;,</span>
+<span class="sd">            &quot;sensitivity&quot;: &quot;low|medium|high&quot;,</span>
+<span class="sd">            &quot;selected&quot;: {</span>
+<span class="sd">                &quot;sentiment&quot;: true,</span>
+<span class="sd">                &quot;political&quot;: true,</span>
+<span class="sd">                &quot;toxicity&quot;: false</span>
+<span class="sd">            }</span>
+<span class="sd">        }</span>
+
+<span class="sd">    Behavior:</span>
+<span class="sd">        - Only runs models explicitly selected by the user</span>
+<span class="sd">        - Skips summarization for very short text inputs</span>
+<span class="sd">        - Uses FLAN-based summarization to interpret combined results</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: JSON object containing:</span>
+<span class="sd">            - results (dict): Outputs of each selected analysis</span>
+<span class="sd">            - sensitivity (str): Echoed sensitivity setting</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        HTTPException(500): If an unexpected server-side error occurs</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">request</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Received data:&quot;</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span>
+
+        <span class="c1"># Get the text and selected biases, sensitivity doesn&#39;t really do anything yet</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;entry&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">sensitivity</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sensitivity&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">selected</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;selected&quot;</span><span class="p">,</span> <span class="p">{})</span>
+
+        <span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># Run only the selected analyses</span>
+        <span class="k">if</span> <span class="n">selected</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;sentiment&quot;</span><span class="p">):</span>
+            <span class="n">results</span><span class="p">[</span><span class="s2">&quot;sentiment&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">run_sentiment_model</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">sensitivity</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">selected</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;political&quot;</span><span class="p">):</span>
+            <span class="n">results</span><span class="p">[</span><span class="s2">&quot;political&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">run_political_model</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">sensitivity</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">selected</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;toxicity&quot;</span><span class="p">):</span>
+            <span class="n">results</span><span class="p">[</span><span class="s2">&quot;toxicity&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">run_toxicity_model</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">sensitivity</span><span class="p">)</span>
+
+        <span class="c1"># Printing results and the type for debugging</span>
+        <span class="n">min_words</span> <span class="o">=</span> <span class="mi">25</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">())</span> <span class="o">&lt;</span> <span class="n">min_words</span><span class="p">:</span>
+            <span class="n">results</span><span class="p">[</span><span class="s2">&quot;summary&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Summary skipped: text too short — needs at least </span><span class="si">{</span><span class="n">min_words</span><span class="si">}</span><span class="s2"> words.&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">results</span><span class="p">[</span><span class="s2">&quot;summary&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">run_flan_summarization_model</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">results</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;summary&quot;</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Summarization result:&quot;</span><span class="p">,</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;summary&quot;</span><span class="p">])</span>  
+        
+        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;results&quot;</span><span class="p">:</span> <span class="n">results</span><span class="p">,</span> <span class="s2">&quot;sensitivity&quot;</span><span class="p">:</span> <span class="n">sensitivity</span><span class="p">}</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span></div>
+
+
+
+<div class="viewcode-block" id="analyze_file">
+<a class="viewcode-back" href="../main.html#main.analyze_file">[docs]</a>
+<span class="nd">@app</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">&quot;/api/analyze-file&quot;</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">analyze_file</span><span class="p">(</span><span class="n">file</span><span class="p">:</span> <span class="n">UploadFile</span> <span class="o">=</span> <span class="n">File</span><span class="p">(</span><span class="o">...</span><span class="p">)):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extract text content from an uploaded file.</span>
+
+<span class="sd">    Supported file types:</span>
+<span class="sd">        - Plain text (.txt)</span>
+<span class="sd">        - PDF documents (.pdf)</span>
+
+<span class="sd">    This endpoint performs **text extraction only** and does not</span>
+<span class="sd">    run any NLP analysis. It is intended to be used as a preprocessing</span>
+<span class="sd">    step before submitting extracted text to `/api/analyze`.</span>
+
+<span class="sd">    Constraints:</span>
+<span class="sd">        - Maximum file size: 2 MB</span>
+<span class="sd">        - Empty files are rejected</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        file (UploadFile): Uploaded file from the client.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        dict: JSON object containing extracted text.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        HTTPException(400): Empty file or PDF extraction failure</span>
+<span class="sd">        HTTPException(413): File exceeds size limit</span>
+<span class="sd">        HTTPException(415): Unsupported file type</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">content_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;text/plain&quot;</span><span class="p">,</span> <span class="s2">&quot;application/pdf&quot;</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span>
+            <span class="n">status_code</span><span class="o">=</span><span class="mi">415</span><span class="p">,</span>
+            <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Only .txt and .pdf files are supported.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">data</span> <span class="o">=</span> <span class="k">await</span> <span class="n">file</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">data</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;Empty file&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2_000_000</span><span class="p">:</span>  <span class="c1"># 2 MB</span>
+        <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">413</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="s2">&quot;File too large&quot;</span><span class="p">)</span>
+    
+    <span class="c1"># Extract text</span>
+    <span class="k">if</span> <span class="n">file</span><span class="o">.</span><span class="n">content_type</span> <span class="o">==</span> <span class="s2">&quot;text/plain&quot;</span><span class="p">:</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># PDF</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">pdf_stream</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">BytesIO</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">reader</span> <span class="o">=</span> <span class="n">PdfReader</span><span class="p">(</span><span class="n">pdf_stream</span><span class="p">)</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">page</span><span class="o">.</span><span class="n">extract_text</span><span class="p">()</span> <span class="ow">or</span> <span class="s2">&quot;&quot;</span> <span class="k">for</span> <span class="n">page</span> <span class="ow">in</span> <span class="n">reader</span><span class="o">.</span><span class="n">pages</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">HTTPException</span><span class="p">(</span><span class="n">status_code</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">detail</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;PDF extraction failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span> <span class="s2">&quot;extracted_text&quot;</span><span class="p">:</span> <span class="n">text</span> <span class="p">}</span></div>
+
+    
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">&quot;main:app&quot;</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">&quot;0.0.0.0&quot;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8000</span><span class="p">,</span> <span class="n">reload</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="Main">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../index.html">TryCatch(Bias)</a></h1>
+
+
+
+
+
+
+
+
+
+<search id="searchbox" style="display: none" role="search">
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Search"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</search>
+<script>document.getElementById('searchbox').style.display = "block"</script><h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">backend</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+  <li><a href="index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &#169;2025, Dominik Trujillo, Pauline Rosales, Amara Barton.
+      
+      |
+      Powered by <a href="https://www.sphinx-doc.org/">Sphinx 9.0.4</a>
+      &amp; <a href="https://alabaster.readthedocs.io">Alabaster 1.0.0</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
