@@ -10,6 +10,11 @@ This repository contains:
 
 ---
 
+Example Usage:
+![Example of Full Analysis](./assets/demo_gif.gif)
+
+---
+
 ## 🖥️ Frontend — React (Fusion Starter)
 
 The frontend is built using the **Fusion Starter** React template and provides an interactive dashboard for submitting text, selecting analysis types, and viewing results through charts and summaries.
@@ -161,6 +166,3 @@ These files should **not** be committed to version control. Ensure they are igno
 * **Documentation:**
   Auto-generated using Sphinx and located in `docs/_build/html/`
 
----
-
-![Example of Full Analysis](./assets/demo_gif.gif)
