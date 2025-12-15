@@ -21,7 +21,12 @@ The frontend is built using the **Fusion Starter** React template and provides a
 
 ### Setup
 
-#### 1. Install Node.js and PNPM
+> **Important:** Running this project requires **two terminal windows**:
+>
+> * One for the frontend
+> * One for the backend
+
+#### 1️⃣ Install Node.js and PNPM
 
 Ensure Node.js is installed and available in your system PATH, then install PNPM:
 
@@ -29,9 +34,9 @@ Ensure Node.js is installed and available in your system PATH, then install PNPM
 npm install -g pnpm
 ```
 
-#### 2. Install Dependencies
+#### 2️⃣ Install Dependencies
 
-From the frontend directory:
+From the `frontend/` directory:
 
 ```bash
 pnpm install
@@ -51,9 +56,12 @@ pnpm approve-builds @swc/core esbuild
 
 If no items are listed, you may safely continue.
 
-#### 3. Run the Frontend
+#### 3️⃣ Run the Frontend
+
+In **Terminal 1**, navigate to the frontend directory:
 
 ```bash
+cd frontend
 pnpm dev
 ```
 
@@ -88,17 +96,14 @@ This installs all required backend dependencies.
 
 ### Running the Server
 
-From the backend directory:
+In **Terminal 2**, navigate to the backend directory:
 
 ```bash
+cd backend
 uvicorn main:app --reload
 ```
 
-Or from the project root:
-
-```bash
-uvicorn backend.main:app --reload
-```
+> **Note:** The command `uvicorn backend.main:app --reload` is **not supported** in this project and may fail due to earlier Docker-related experimentation. Always run the backend from inside the `backend/` directory using the command above.
 
 The backend runs on **[http://127.0.0.1:8000](http://127.0.0.1:8000)** by default.
 
@@ -166,3 +171,4 @@ These files should **not** be committed to version control. Ensure they are igno
 * **Documentation:**
   Auto-generated using Sphinx and located in `docs/_build/html/`
 
+---
